@@ -6,10 +6,10 @@ from typing import Dict, Any
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: API для получения списка игровых предметов из маркетплейса
-    Args: event - dict с httpMethod, queryStringParameters
+    Business: API для получения и создания игровых предметов на маркетплейсе
+    Args: event - dict с httpMethod, queryStringParameters, body
           context - объект с атрибутами request_id, function_name
-    Returns: HTTP response с JSON списком предметов
+    Returns: HTTP response с JSON списком предметов или созданным предметом
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -26,12 +26,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False
         }
     
-    if method == 'GET':
-        conn = None
-        try:
-            dsn = os.environ.get('DATABASE_URL')
-            conn = psycopg2.connect(dsn)
-            
+    conn = None
+    try:
+        dsn = os.environ.get('DATABASE_URL')
+        conn = psycopg2.connect(dsn)
+        
+        if method == 'GET':
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT 
@@ -60,9 +60,40 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     'body': json.dumps({'items': items}, default=str),
                     'isBase64Encoded': False
                 }
-        finally:
-            if conn:
-                conn.close()
+        
+        elif method == 'POST':
+            body_data = json.loads(event.get('body', '{}'))
+            
+            seller_id = body_data.get('seller_id', 1)
+            title = body_data.get('title', '')
+            description = body_data.get('description', '')
+            price = float(body_data.get('price', 0))
+            image_url = body_data.get('image_url', 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400')
+            category = body_data.get('category', 'Разное')
+            rarity = body_data.get('rarity', 'Обычный')
+            
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO items (seller_id, title, description, price, image_url, category, rarity)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id, seller_id, title, description, price, image_url, category, rarity, is_sold
+                """, (seller_id, title, description, price, image_url, category, rarity))
+                
+                conn.commit()
+                new_item = cur.fetchone()
+                
+                return {
+                    'statusCode': 201,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(new_item, default=str),
+                    'isBase64Encoded': False
+                }
+    finally:
+        if conn:
+            conn.close()
     
     return {
         'statusCode': 405,

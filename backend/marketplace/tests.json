@@ -8,6 +8,24 @@
       "expectedBody": {
         "items": []
       }
+    },
+    {
+      "name": "Create new item",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "seller_id": 1,
+        "title": "Тестовый предмет",
+        "description": "Описание теста",
+        "price": 100,
+        "category": "Тест",
+        "rarity": "Обычный"
+      },
+      "expectedStatus": 201,
+      "expectedBody": {
+        "id": "number",
+        "title": "string"
+      }
     }
   ]
 }

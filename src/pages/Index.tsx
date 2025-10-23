@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -26,6 +31,15 @@ const Index = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [balance, setBalance] = useState<UserBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [newItem, setNewItem] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: 'Оружие',
+    rarity: 'Обычный',
+    image_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400'
+  });
 
   const MARKETPLACE_URL = 'https://functions.poehali.dev/df4a99c9-f7a8-4c3f-ad77-c7a1d451aed9';
   const BALANCE_URL = 'https://functions.poehali.dev/5d283741-7051-4c0d-8033-2f8a18947876';
@@ -73,6 +87,48 @@ const Index = () => {
     } catch (error) {
       console.error('Error topping up:', error);
       toast.error('Ошибка пополнения баланса');
+    }
+  };
+
+  const handleCreateItem = async () => {
+    if (!newItem.title || !newItem.price) {
+      toast.error('Заполните название и цену');
+      return;
+    }
+
+    try {
+      const res = await fetch(MARKETPLACE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          seller_id: 1,
+          title: newItem.title,
+          description: newItem.description,
+          price: parseFloat(newItem.price),
+          category: newItem.category,
+          rarity: newItem.rarity,
+          image_url: newItem.image_url
+        })
+      });
+
+      if (res.ok) {
+        toast.success('Предмет выставлен на продажу!');
+        setOpenDialog(false);
+        setNewItem({
+          title: '',
+          description: '',
+          price: '',
+          category: 'Оружие',
+          rarity: 'Обычный',
+          image_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=400'
+        });
+        fetchData();
+      }
+    } catch (error) {
+      console.error('Error creating item:', error);
+      toast.error('Ошибка создания предмета');
     }
   };
 
@@ -140,9 +196,122 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 text-center">
-          <h2 className="text-4xl font-bold mb-2 text-glow">Витрина предметов</h2>
-          <p className="text-muted-foreground text-lg">Покупай и продавай игровые вещи за балы</p>
+        <div className="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-center md:text-left">
+            <h2 className="text-4xl font-bold mb-2 text-glow">Витрина предметов</h2>
+            <p className="text-muted-foreground text-lg">Покупай и продавай игровые вещи за балы</p>
+          </div>
+          
+          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect text-lg px-6 py-6">
+                <Icon name="Plus" size={20} className="mr-2" />
+                Продать свой предмет
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="bg-card border-primary/30 max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-primary">Выставить предмет на продажу</DialogTitle>
+                <DialogDescription>
+                  Заполните информацию о вашем предмете и установите цену
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Название предмета *</Label>
+                  <Input
+                    id="title"
+                    placeholder="Легендарный меч"
+                    value={newItem.title}
+                    onChange={(e) => setNewItem({...newItem, title: e.target.value})}
+                    className="border-border/50"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="description">Описание</Label>
+                  <Textarea
+                    id="description"
+                    placeholder="Редкий меч с огненным уроном..."
+                    value={newItem.description}
+                    onChange={(e) => setNewItem({...newItem, description: e.target.value})}
+                    className="border-border/50"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Цена (балы) *</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      placeholder="100"
+                      value={newItem.price}
+                      onChange={(e) => setNewItem({...newItem, price: e.target.value})}
+                      className="border-border/50"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="category">Категория</Label>
+                    <Select value={newItem.category} onValueChange={(value) => setNewItem({...newItem, category: value})}>
+                      <SelectTrigger className="border-border/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Оружие">Оружие</SelectItem>
+                        <SelectItem value="Броня">Броня</SelectItem>
+                        <SelectItem value="Зелья">Зелья</SelectItem>
+                        <SelectItem value="Аксессуары">Аксессуары</SelectItem>
+                        <SelectItem value="Скины">Скины</SelectItem>
+                        <SelectItem value="Расходники">Расходники</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="rarity">Редкость</Label>
+                  <Select value={newItem.rarity} onValueChange={(value) => setNewItem({...newItem, rarity: value})}>
+                    <SelectTrigger className="border-border/50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Обычный">Обычный</SelectItem>
+                      <SelectItem value="Редкий">Редкий</SelectItem>
+                      <SelectItem value="Эпический">Эпический</SelectItem>
+                      <SelectItem value="Легендарный">Легендарный</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="image_url">Ссылка на изображение</Label>
+                  <Input
+                    id="image_url"
+                    placeholder="https://..."
+                    value={newItem.image_url}
+                    onChange={(e) => setNewItem({...newItem, image_url: e.target.value})}
+                    className="border-border/50"
+                  />
+                </div>
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpenDialog(false)}>
+                  Отмена
+                </Button>
+                <Button 
+                  onClick={handleCreateItem}
+                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
+                >
+                  <Icon name="Check" size={18} className="mr-2" />
+                  Выставить на продажу
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
