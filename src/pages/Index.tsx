@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,6 +34,12 @@ const Index = () => {
   const [balance, setBalance] = useState<UserBalance | null>(null);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
+  const [openBalanceDialog, setOpenBalanceDialog] = useState(false);
+  const [openWithdrawDialog, setOpenWithdrawDialog] = useState(false);
+  const [openReferralDialog, setOpenReferralDialog] = useState(false);
+  const [referralData, setReferralData] = useState<any>(null);
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [paymentDetails, setPaymentDetails] = useState('');
   const [newItem, setNewItem] = useState({
     title: '',
     description: '',
@@ -43,6 +51,8 @@ const Index = () => {
 
   const MARKETPLACE_URL = 'https://functions.poehali.dev/df4a99c9-f7a8-4c3f-ad77-c7a1d451aed9';
   const BALANCE_URL = 'https://functions.poehali.dev/5d283741-7051-4c0d-8033-2f8a18947876';
+  const WITHDRAW_URL = 'https://functions.poehali.dev/d8001bff-bd17-4f41-9fc2-19526a5d5ea6';
+  const REFERRAL_URL = 'https://functions.poehali.dev/fa6fc18d-d38b-44fe-8ca0-36ba45768277';
 
   useEffect(() => {
     fetchData();
@@ -132,6 +142,61 @@ const Index = () => {
     }
   };
 
+  const fetchReferralData = async () => {
+    try {
+      const res = await fetch(`${REFERRAL_URL}?user_id=1`);
+      const data = await res.json();
+      setReferralData(data);
+    } catch (error) {
+      console.error('Error fetching referral data:', error);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!withdrawAmount || parseFloat(withdrawAmount) <= 0) {
+      toast.error('Укажите корректную сумму');
+      return;
+    }
+
+    try {
+      const res = await fetch(WITHDRAW_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: 1,
+          amount: parseFloat(withdrawAmount),
+          payment_method: 'card',
+          payment_details: paymentDetails
+        })
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        toast.success('Заявка на вывод создана! Обработка займет 1-3 дня');
+        setOpenWithdrawDialog(false);
+        setWithdrawAmount('');
+        setPaymentDetails('');
+        fetchData();
+      } else {
+        toast.error(data.error || 'Ошибка вывода средств');
+      }
+    } catch (error) {
+      console.error('Error withdrawing:', error);
+      toast.error('Ошибка вывода средств');
+    }
+  };
+
+  const copyReferralLink = () => {
+    if (referralData?.referral_code) {
+      const link = `${window.location.origin}?ref=${referralData.referral_code}`;
+      navigator.clipboard.writeText(link);
+      toast.success('Реферальная ссылка скопирована!');
+    }
+  };
+
   const getRarityColor = (rarity: string) => {
     const colors: Record<string, string> = {
       'Легендарный': 'bg-primary text-primary-foreground glow-effect',
@@ -175,21 +240,33 @@ const Index = () => {
                 </CardContent>
               </Card>
               
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => handleTopUp(100)} 
-                  variant="outline" 
-                  className="border-primary/50 hover:bg-primary/10 hover:glow-effect transition-all"
-                >
-                  +100
-                </Button>
-                <Button 
-                  onClick={() => handleTopUp(500)} 
-                  className="bg-primary hover:bg-primary/90 glow-effect transition-all"
-                >
-                  +500
-                </Button>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="border-primary/50 hover:glow-effect">
+                    <Icon name="Menu" size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-card border-primary/30">
+                  <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setOpenBalanceDialog(true)}>
+                    <Icon name="CreditCard" size={16} className="mr-2" />
+                    Купить балы
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setOpenWithdrawDialog(true)}>
+                    <Icon name="Banknote" size={16} className="mr-2" />
+                    Вывести балы
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    fetchReferralData();
+                    setOpenReferralDialog(true);
+                  }}>
+                    <Icon name="Users" size={16} className="mr-2" />
+                    Пригласить друга
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -369,6 +446,147 @@ const Index = () => {
           ))}
         </div>
       </main>
+
+      <Dialog open={openBalanceDialog} onOpenChange={setOpenBalanceDialog}>
+        <DialogContent className="bg-card border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-primary">Купить балы</DialogTitle>
+            <DialogDescription>Выберите пакет для пополнения баланса</DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-4 py-4">
+            {[100, 500, 1000, 5000].map((amount) => (
+              <Card 
+                key={amount}
+                className="cursor-pointer hover:scale-105 transition-all hover:glow-effect border-primary/30"
+                onClick={() => {
+                  handleTopUp(amount);
+                  setOpenBalanceDialog(false);
+                }}
+              >
+                <CardContent className="p-6 text-center">
+                  <Icon name="Coins" size={32} className="text-primary mx-auto mb-2" />
+                  <p className="text-3xl font-bold text-primary">{amount}</p>
+                  <p className="text-sm text-muted-foreground">балов</p>
+                  <p className="text-xs mt-2 text-accent">{(amount / 10).toFixed(0)} руб</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openWithdrawDialog} onOpenChange={setOpenWithdrawDialog}>
+        <DialogContent className="bg-card border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-primary">Вывод балов</DialogTitle>
+            <DialogDescription>
+              Выводите балы 1 раз в день. 1 бал = 0.1 руб
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-muted/30 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-1">Доступно для вывода</p>
+              <p className="text-3xl font-bold text-primary">{balance?.balance} балов</p>
+              <p className="text-sm text-accent">≈ {(parseFloat(balance?.balance || '0') * 0.1).toFixed(2)} руб</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="withdraw_amount">Сумма вывода (балы)</Label>
+              <Input
+                id="withdraw_amount"
+                type="number"
+                placeholder="100"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+                className="border-border/50"
+              />
+              <p className="text-xs text-muted-foreground">
+                Минимум 100 балов (10 руб)
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="payment_details">Номер карты</Label>
+              <Input
+                id="payment_details"
+                placeholder="1234 5678 9012 3456"
+                value={paymentDetails}
+                onChange={(e) => setPaymentDetails(e.target.value)}
+                className="border-border/50"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenWithdrawDialog(false)}>
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleWithdraw}
+              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
+            >
+              <Icon name="Banknote" size={18} className="mr-2" />
+              Вывести
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openReferralDialog} onOpenChange={setOpenReferralDialog}>
+        <DialogContent className="bg-card border-primary/30 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-primary">Пригласи друга</DialogTitle>
+            <DialogDescription>
+              Получай 50 балов за каждого приглашенного друга!
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="bg-gradient-to-r from-primary/20 to-secondary/20 p-6 rounded-lg text-center">
+              <Icon name="Gift" size={48} className="text-primary mx-auto mb-3" />
+              <p className="text-4xl font-bold text-primary mb-1">50 балов</p>
+              <p className="text-sm text-muted-foreground">за каждого друга</p>
+            </div>
+            
+            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Приглашено друзей</span>
+                <span className="text-xl font-bold text-primary">{referralData?.total_referrals || 0}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Заработано</span>
+                <span className="text-xl font-bold text-secondary">{referralData?.total_earned || 0} балов</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Ваша реферальная ссылка</Label>
+              <div className="flex gap-2">
+                <Input
+                  readOnly
+                  value={referralData?.referral_code ? `${window.location.origin}?ref=${referralData.referral_code}` : 'Загрузка...'}
+                  className="border-border/50"
+                />
+                <Button 
+                  onClick={copyReferralLink}
+                  variant="outline"
+                  className="border-primary/50"
+                >
+                  <Icon name="Copy" size={18} />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-accent/10 p-3 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                💡 Отправь ссылку другу, и когда он зарегистрируется, вы оба получите бонусы!
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <footer className="border-t border-border/50 mt-16 py-8 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center text-muted-foreground">

@@ -1,0 +1,15 @@
+{
+  "tests": [
+    {
+      "name": "Get referral info",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "referral_code": "string",
+        "total_referrals": "number",
+        "total_earned": "string"
+      }
+    }
+  ]
+}

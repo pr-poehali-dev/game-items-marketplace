@@ -1,0 +1,21 @@
+{
+  "tests": [
+    {
+      "name": "Create withdrawal request",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "amount": 100,
+        "payment_method": "card",
+        "payment_details": "4111111111111111"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": "number",
+        "amount": "string",
+        "status": "pending"
+      }
+    }
+  ]
+}
