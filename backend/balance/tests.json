@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Get user balance",
+      "method": "GET",
+      "path": "/?user_id=1",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "id": 1,
+        "username": "Player1",
+        "balance": "1500.00"
+      }
+    },
+    {
+      "name": "Top up balance",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "amount": 100
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "balance": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
