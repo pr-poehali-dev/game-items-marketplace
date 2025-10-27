@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 import { UserHeader } from '@/components/marketplace/UserHeader';
@@ -29,6 +30,7 @@ const Index = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [balance, setBalance] = useState<UserBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [openBalanceDialog, setOpenBalanceDialog] = useState(false);
   const [openWithdrawDialog, setOpenWithdrawDialog] = useState(false);
@@ -222,7 +224,7 @@ const Index = () => {
       />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-4xl font-bold mb-2 text-glow">Маркетплейс</h2>
             <p className="text-muted-foreground">Покупай и продавай игровые предметы</p>
@@ -245,6 +247,19 @@ const Index = () => {
           />
         </div>
 
+        <div className="mb-6">
+          <div className="relative">
+            <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Поиск предметов по названию..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-card/50 border-border/50 focus:border-primary/50"
+            />
+          </div>
+        </div>
+
         <Tabs defaultValue="all" className="mb-8">
           <TabsList className="bg-card/50 border border-border/50">
             <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
@@ -258,33 +273,56 @@ const Index = () => {
 
           <TabsContent value="all" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
-              ))}
+              {items
+                .filter(item => 
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))}
             </div>
           </TabsContent>
 
           <TabsContent value="weapons" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.filter(item => item.category === 'Оружие').map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
-              ))}
+              {items
+                .filter(item => item.category === 'Оружие')
+                .filter(item => 
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))}
             </div>
           </TabsContent>
 
           <TabsContent value="armor" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.filter(item => item.category === 'Броня').map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
-              ))}
+              {items
+                .filter(item => item.category === 'Броня')
+                .filter(item => 
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))}
             </div>
           </TabsContent>
 
           <TabsContent value="skins" className="mt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items.filter(item => item.category === 'Скины').map((item, index) => (
-                <ItemCard key={item.id} item={item} index={index} />
-              ))}
+              {items
+                .filter(item => item.category === 'Скины')
+                .filter(item => 
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((item, index) => (
+                  <ItemCard key={item.id} item={item} index={index} />
+                ))}
             </div>
           </TabsContent>
         </Tabs>
