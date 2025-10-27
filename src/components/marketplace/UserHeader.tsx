@@ -1,6 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 
 interface UserBalance {
@@ -15,6 +16,9 @@ interface UserHeaderProps {
   onOpenWithdrawDialog: () => void;
   onOpenReferralDialog: () => void;
   onFetchReferralData: () => void;
+  onOpenProfile: () => void;
+  onOpenChats: () => void;
+  unreadChatsCount?: number;
 }
 
 export const UserHeader = ({ 
@@ -22,7 +26,10 @@ export const UserHeader = ({
   onOpenBalanceDialog, 
   onOpenWithdrawDialog, 
   onOpenReferralDialog,
-  onFetchReferralData 
+  onFetchReferralData,
+  onOpenProfile,
+  onOpenChats,
+  unreadChatsCount = 0
 }: UserHeaderProps) => {
   return (
     <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
@@ -46,6 +53,22 @@ export const UserHeader = ({
               </CardContent>
             </Card>
             
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-primary/50 hover:glow-effect relative"
+              onClick={onOpenChats}
+            >
+              <Icon name="MessageCircle" size={20} />
+              {unreadChatsCount > 0 && (
+                <Badge 
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 bg-red-500 text-white text-xs"
+                >
+                  {unreadChatsCount}
+                </Badge>
+              )}
+            </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-primary/50 hover:glow-effect">
@@ -54,6 +77,11 @@ export const UserHeader = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 bg-card border-primary/30">
                 <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onOpenProfile}>
+                  <Icon name="User" size={16} className="mr-2" />
+                  Профиль
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onOpenBalanceDialog}>
                   <Icon name="CreditCard" size={16} className="mr-2" />

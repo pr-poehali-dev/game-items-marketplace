@@ -8,6 +8,9 @@ import { UserHeader } from '@/components/marketplace/UserHeader';
 import { ItemCard } from '@/components/marketplace/ItemCard';
 import { CreateItemDialog } from '@/components/marketplace/CreateItemDialog';
 import { PaymentDialogs } from '@/components/marketplace/PaymentDialogs';
+import { ProfileDialog } from '@/components/profile/ProfileDialog';
+import { ChatsDialog } from '@/components/marketplace/ChatsDialog';
+import { TransactionDialog } from '@/components/marketplace/TransactionDialog';
 
 interface Item {
   id: number;
@@ -35,9 +38,23 @@ const Index = () => {
   const [openBalanceDialog, setOpenBalanceDialog] = useState(false);
   const [openWithdrawDialog, setOpenWithdrawDialog] = useState(false);
   const [openReferralDialog, setOpenReferralDialog] = useState(false);
+  const [openProfileDialog, setOpenProfileDialog] = useState(false);
+  const [openChatsDialog, setOpenChatsDialog] = useState(false);
+  const [openTransactionDialog, setOpenTransactionDialog] = useState(false);
   const [referralData, setReferralData] = useState<any>(null);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [paymentDetails, setPaymentDetails] = useState('');
+  const [chats, setChats] = useState<any[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
+  const [messages, setMessages] = useState<any[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState({
+    username: balance?.username || 'Player1',
+    email: 'player@example.com',
+    avatar: '',
+    bio: '',
+    balance: parseFloat(balance?.balance || '0')
+  });
   const [newItem, setNewItem] = useState({
     title: '',
     description: '',
@@ -221,6 +238,9 @@ const Index = () => {
         onOpenWithdrawDialog={() => setOpenWithdrawDialog(true)}
         onOpenReferralDialog={() => setOpenReferralDialog(true)}
         onFetchReferralData={fetchReferralData}
+        onOpenProfile={() => setOpenProfileDialog(true)}
+        onOpenChats={() => setOpenChatsDialog(true)}
+        unreadChatsCount={chats.filter(c => c.unread_count > 0).length}
       />
 
       <main className="container mx-auto px-4 py-8">
@@ -344,6 +364,57 @@ const Index = () => {
         onTopUp={handleTopUp}
         onWithdraw={handleWithdraw}
         onCopyReferralLink={copyReferralLink}
+      />
+
+      <ProfileDialog
+        open={openProfileDialog}
+        onOpenChange={setOpenProfileDialog}
+        profile={{
+          ...userProfile,
+          username: balance?.username || userProfile.username,
+          balance: parseFloat(balance?.balance || '0')
+        }}
+        onSave={(profile) => {
+          setUserProfile(profile);
+          toast.success('Профиль обновлен!');
+        }}
+      />
+
+      <ChatsDialog
+        open={openChatsDialog}
+        onOpenChange={setOpenChatsDialog}
+        chats={chats}
+        selectedChatId={selectedChatId}
+        messages={messages}
+        onSelectChat={(chatId) => {
+          setSelectedChatId(chatId);
+        }}
+        onSendMessage={(transactionId, message) => {
+          toast.success('Сообщение отправлено');
+        }}
+        onOpenTransaction={(transactionId) => {
+          setOpenChatsDialog(false);
+          setOpenTransactionDialog(true);
+        }}
+      />
+
+      <TransactionDialog
+        open={openTransactionDialog}
+        onOpenChange={setOpenTransactionDialog}
+        transaction={selectedTransaction}
+        currentUserId={1}
+        onConfirmDelivery={(transactionId) => {
+          toast.success('Отправка подтверждена! Ожидайте подтверждения от покупателя.');
+          setOpenTransactionDialog(false);
+        }}
+        onConfirmReceived={(transactionId) => {
+          toast.success('Получение подтверждено! Деньги переведены продавцу.');
+          setOpenTransactionDialog(false);
+        }}
+        onCancelTransaction={(transactionId) => {
+          toast.error('Сделка отменена. Деньги возвращены покупателю.');
+          setOpenTransactionDialog(false);
+        }}
       />
 
       <footer className="border-t border-border/50 mt-16 py-8 bg-card/30 backdrop-blur-sm">
