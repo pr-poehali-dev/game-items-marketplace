@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
+import { useState } from 'react';
 
 interface NewItem {
   title: string;
@@ -30,6 +31,35 @@ export const CreateItemDialog = ({
   onItemChange, 
   onCreateItem 
 }: CreateItemDialogProps) => {
+  const [imagePreview, setImagePreview] = useState<string>(newItem.image_url);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Пожалуйста, выберите изображение');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Размер файла не должен превышать 5 МБ');
+      return;
+    }
+
+    setUploading(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setImagePreview(base64);
+      onItemChange({...newItem, image_url: base64});
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card border-primary/30 max-w-2xl">
@@ -114,14 +144,51 @@ export const CreateItemDialog = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="image_url">Ссылка на изображение</Label>
-            <Input
-              id="image_url"
-              placeholder="https://..."
-              value={newItem.image_url}
-              onChange={(e) => onItemChange({...newItem, image_url: e.target.value})}
-              className="border-border/50"
-            />
+            <Label htmlFor="image">Изображение предмета</Label>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="relative cursor-pointer"
+                  disabled={uploading}
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  <Icon name={uploading ? "Loader2" : "Upload"} size={18} className={`mr-2 ${uploading ? 'animate-spin' : ''}`} />
+                  {uploading ? 'Загрузка...' : 'Добавить изображение'}
+                </Button>
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                {imagePreview && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setImagePreview('');
+                      onItemChange({...newItem, image_url: ''});
+                    }}
+                  >
+                    <Icon name="X" size={16} className="mr-1" />
+                    Удалить
+                  </Button>
+                )}
+              </div>
+              {imagePreview && (
+                <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-border/50">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
