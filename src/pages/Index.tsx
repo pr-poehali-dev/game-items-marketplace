@@ -220,6 +220,59 @@ const Index = () => {
     }
   };
 
+  const handleBuyItem = async (item: Item) => {
+    const userBalance = parseFloat(balance?.balance || '0');
+    const itemPrice = parseFloat(item.price);
+
+    if (userBalance < itemPrice) {
+      toast.error('Недостаточно средств на балансе!');
+      return;
+    }
+
+    try {
+      const newBalance = userBalance - itemPrice;
+      setBalance(prev => prev ? { ...prev, balance: newBalance.toString() } : null);
+
+      const mockTransaction = {
+        id: Date.now(),
+        item_title: item.title,
+        item_image: item.image_url,
+        price: itemPrice,
+        buyer_name: balance?.username || 'Player1',
+        seller_name: item.seller_name,
+        status: 'pending' as const,
+        created_at: new Date().toISOString(),
+        buyer_id: 1,
+        seller_id: 2
+      };
+
+      setSelectedTransaction(mockTransaction);
+
+      const newChat = {
+        id: Date.now(),
+        transaction_id: mockTransaction.id,
+        item_title: item.title,
+        other_user_name: item.seller_name,
+        last_message: 'Сделка создана',
+        unread_count: 1,
+        updated_at: new Date().toISOString()
+      };
+
+      setChats(prev => [newChat, ...prev]);
+
+      toast.success(`Товар "${item.title}" куплен! Деньги заморожены до подтверждения.`);
+      toast.info(`Продавцу ${item.seller_name} отправлено уведомление о покупке`);
+      
+      setTimeout(() => {
+        setOpenTransactionDialog(true);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Error buying item:', error);
+      toast.error('Ошибка при покупке товара');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -299,7 +352,7 @@ const Index = () => {
                   item.description.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} />
+                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
                 ))}
             </div>
           </TabsContent>
@@ -313,7 +366,7 @@ const Index = () => {
                   item.description.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} />
+                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
                 ))}
             </div>
           </TabsContent>
@@ -327,7 +380,7 @@ const Index = () => {
                   item.description.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} />
+                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
                 ))}
             </div>
           </TabsContent>
@@ -341,7 +394,7 @@ const Index = () => {
                   item.description.toLowerCase().includes(searchQuery.toLowerCase())
                 )
                 .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} />
+                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
                 ))}
             </div>
           </TabsContent>

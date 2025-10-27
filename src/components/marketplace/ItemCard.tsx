@@ -18,6 +18,7 @@ interface Item {
 interface ItemCardProps {
   item: Item;
   index: number;
+  onBuyItem: (item: Item) => void;
 }
 
 const getRarityColor = (rarity: string) => {
@@ -30,7 +31,7 @@ const getRarityColor = (rarity: string) => {
   return colors[rarity] || 'bg-muted text-muted-foreground';
 };
 
-export const ItemCard = ({ item, index }: ItemCardProps) => {
+export const ItemCard = ({ item, index, onBuyItem }: ItemCardProps) => {
   return (
     <Card 
       className="group hover:scale-105 transition-all duration-300 hover:glow-effect cursor-pointer bg-card/80 backdrop-blur-sm border-border/50 animate-fade-in overflow-hidden"
@@ -74,7 +75,7 @@ export const ItemCard = ({ item, index }: ItemCardProps) => {
       <CardFooter>
         <Button 
           className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect group-hover:animate-glow-pulse transition-all"
-          onClick={() => toast.success('Функция покупки скоро будет доступна!')}
+          onClick={() => onBuyItem(item)}
         >
           <Icon name="ShoppingCart" size={18} className="mr-2" />
           Купить

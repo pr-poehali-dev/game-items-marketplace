@@ -55,10 +55,16 @@ export const TransactionDialog = ({
 
   const getStatusMessage = () => {
     if (transaction.status === 'pending' && isSeller) {
-      return 'Передайте товар покупателю и подтвердите отправку';
+      return 'Вам поступил заказ! Передайте товар покупателю и подтвердите отправку';
+    }
+    if (transaction.status === 'pending' && isBuyer) {
+      return 'Ожидайте отправки товара от продавца';
     }
     if (transaction.status === 'seller_confirmed' && isBuyer) {
-      return 'Подтвердите получение товара';
+      return 'Продавец подтвердил отправку. Подтвердите получение товара';
+    }
+    if (transaction.status === 'seller_confirmed' && isSeller) {
+      return 'Ожидайте подтверждения получения от покупателя';
     }
     if (transaction.status === 'completed') {
       return 'Сделка успешно завершена! Деньги переведены продавцу.';
