@@ -252,10 +252,7 @@ const Index = () => {
               Все
             </TabsTrigger>
             <TabsTrigger value="weapons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Roblox</TabsTrigger>
-            <TabsTrigger value="armor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="Shield" size={16} className="mr-2" />
-              Броня
-            </TabsTrigger>
+            <TabsTrigger value="armor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Minecraft</TabsTrigger>
             <TabsTrigger value="skins" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Icon name="Palette" size={16} className="mr-2" />
               Скины
