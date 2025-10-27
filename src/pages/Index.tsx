@@ -1,16 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
+import { UserHeader } from '@/components/marketplace/UserHeader';
+import { ItemCard } from '@/components/marketplace/ItemCard';
+import { CreateItemDialog } from '@/components/marketplace/CreateItemDialog';
+import { PaymentDialogs } from '@/components/marketplace/PaymentDialogs';
 
 interface Item {
   id: number;
@@ -205,16 +201,6 @@ const Index = () => {
     }
   };
 
-  const getRarityColor = (rarity: string) => {
-    const colors: Record<string, string> = {
-      'Легендарный': 'bg-primary text-primary-foreground glow-effect',
-      'Эпический': 'bg-secondary text-secondary-foreground glow-effect-cyan',
-      'Редкий': 'bg-accent text-accent-foreground',
-      'Обычный': 'bg-muted text-muted-foreground'
-    };
-    return colors[rarity] || 'bg-muted text-muted-foreground';
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -227,374 +213,109 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-card">
-      <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-wrap justify-between items-center gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center glow-effect animate-glow-pulse">
-                <Icon name="Gamepad2" size={24} className="text-white" />
-              </div>
-              <h1 className="text-3xl font-bold text-glow">GAMING SHOP</h1>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-4">
-              <Card className="bg-card/50 border-primary/30 backdrop-blur-sm">
-                <CardContent className="p-3 flex items-center gap-3">
-                  <Icon name="Wallet" size={20} className="text-primary" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">{balance?.username}</p>
-                    <p className="text-xl font-bold text-primary">{balance?.balance} балов</p>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="border-primary/50 hover:glow-effect">
-                    <Icon name="Menu" size={20} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-card border-primary/30">
-                  <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setOpenBalanceDialog(true)}>
-                    <Icon name="CreditCard" size={16} className="mr-2" />
-                    Купить балы
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setOpenWithdrawDialog(true)}>
-                    <Icon name="Banknote" size={16} className="mr-2" />
-                    Вывести балы
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {
-                    fetchReferralData();
-                    setOpenReferralDialog(true);
-                  }}>
-                    <Icon name="Users" size={16} className="mr-2" />
-                    Пригласить друга
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-        </div>
-      </header>
+      <UserHeader 
+        balance={balance}
+        onOpenBalanceDialog={() => setOpenBalanceDialog(true)}
+        onOpenWithdrawDialog={() => setOpenWithdrawDialog(true)}
+        onOpenReferralDialog={() => setOpenReferralDialog(true)}
+        onFetchReferralData={fetchReferralData}
+      />
 
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-center md:text-left">
-            <h2 className="text-4xl font-bold mb-2 text-glow">Витрина предметов</h2>
-            <p className="text-muted-foreground text-lg">Покупай и продавай игровые вещи за балы</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h2 className="text-4xl font-bold mb-2 text-glow">Маркетплейс</h2>
+            <p className="text-muted-foreground">Покупай и продавай игровые предметы</p>
           </div>
           
-          <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect text-lg px-6 py-6">
-                <Icon name="Plus" size={20} className="mr-2" />
-                Продать свой предмет
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-primary/30 max-w-md">
-              <DialogHeader>
-                <DialogTitle className="text-2xl text-primary">Выставить предмет на продажу</DialogTitle>
-                <DialogDescription>
-                  Заполните информацию о вашем предмете и установите цену
-                </DialogDescription>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Название предмета *</Label>
-                  <Input
-                    id="title"
-                    placeholder="Легендарный меч"
-                    value={newItem.title}
-                    onChange={(e) => setNewItem({...newItem, title: e.target.value})}
-                    className="border-border/50"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Описание</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Редкий меч с огненным уроном..."
-                    value={newItem.description}
-                    onChange={(e) => setNewItem({...newItem, description: e.target.value})}
-                    className="border-border/50"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Цена (балы) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="100"
-                      value={newItem.price}
-                      onChange={(e) => setNewItem({...newItem, price: e.target.value})}
-                      className="border-border/50"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Категория</Label>
-                    <Select value={newItem.category} onValueChange={(value) => setNewItem({...newItem, category: value})}>
-                      <SelectTrigger className="border-border/50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Оружие">Оружие</SelectItem>
-                        <SelectItem value="Броня">Броня</SelectItem>
-                        <SelectItem value="Зелья">Зелья</SelectItem>
-                        <SelectItem value="Аксессуары">Аксессуары</SelectItem>
-                        <SelectItem value="Скины">Скины</SelectItem>
-                        <SelectItem value="Расходники">Расходники</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="rarity">Редкость</Label>
-                  <Select value={newItem.rarity} onValueChange={(value) => setNewItem({...newItem, rarity: value})}>
-                    <SelectTrigger className="border-border/50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Обычный">Обычный</SelectItem>
-                      <SelectItem value="Редкий">Редкий</SelectItem>
-                      <SelectItem value="Эпический">Эпический</SelectItem>
-                      <SelectItem value="Легендарный">Легендарный</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="image_url">Ссылка на изображение</Label>
-                  <Input
-                    id="image_url"
-                    placeholder="https://..."
-                    value={newItem.image_url}
-                    onChange={(e) => setNewItem({...newItem, image_url: e.target.value})}
-                    className="border-border/50"
-                  />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpenDialog(false)}>
-                  Отмена
-                </Button>
-                <Button 
-                  onClick={handleCreateItem}
-                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
-                >
-                  <Icon name="Check" size={18} className="mr-2" />
-                  Выставить на продажу
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            onClick={() => setOpenDialog(true)}
+            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect animate-glow-pulse"
+          >
+            <Icon name="Plus" size={20} className="mr-2" />
+            Продать предмет
+          </Button>
+          
+          <CreateItemDialog 
+            open={openDialog}
+            onOpenChange={setOpenDialog}
+            newItem={newItem}
+            onItemChange={setNewItem}
+            onCreateItem={handleCreateItem}
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item, index) => (
-            <Card 
-              key={item.id} 
-              className="group hover:scale-105 transition-all duration-300 hover:glow-effect cursor-pointer bg-card/80 backdrop-blur-sm border-border/50 animate-fade-in overflow-hidden"
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              <div className="relative overflow-hidden h-48">
-                <img 
-                  src={item.image_url} 
-                  alt={item.title}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                />
-                <div className="absolute top-2 right-2">
-                  <Badge className={getRarityColor(item.rarity)}>
-                    {item.rarity}
-                  </Badge>
-                </div>
-                <div className="absolute top-2 left-2">
-                  <Badge variant="outline" className="bg-background/80 backdrop-blur-sm">
-                    {item.category}
-                  </Badge>
-                </div>
-              </div>
-              
-              <CardHeader>
-                <CardTitle className="text-xl">{item.title}</CardTitle>
-                <CardDescription>{item.description}</CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                  <Icon name="User" size={16} />
-                  <span>Продавец: {item.seller_name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Icon name="Coins" size={24} className="text-primary" />
-                  <span className="text-3xl font-bold text-primary">{item.price}</span>
-                  <span className="text-muted-foreground">балов</span>
-                </div>
-              </CardContent>
-              
-              <CardFooter>
-                <Button 
-                  className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect group-hover:animate-glow-pulse transition-all"
-                  onClick={() => toast.success('Функция покупки скоро будет доступна!')}
-                >
-                  <Icon name="ShoppingCart" size={18} className="mr-2" />
-                  Купить
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <Tabs defaultValue="all" className="mb-8">
+          <TabsList className="bg-card/50 border border-border/50">
+            <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Icon name="Grid3x3" size={16} className="mr-2" />
+              Все
+            </TabsTrigger>
+            <TabsTrigger value="weapons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Icon name="Sword" size={16} className="mr-2" />
+              Оружие
+            </TabsTrigger>
+            <TabsTrigger value="armor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Icon name="Shield" size={16} className="mr-2" />
+              Броня
+            </TabsTrigger>
+            <TabsTrigger value="skins" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Icon name="Palette" size={16} className="mr-2" />
+              Скины
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="all" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.map((item, index) => (
+                <ItemCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="weapons" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.filter(item => item.category === 'Оружие').map((item, index) => (
+                <ItemCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="armor" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.filter(item => item.category === 'Броня').map((item, index) => (
+                <ItemCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="skins" className="mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {items.filter(item => item.category === 'Скины').map((item, index) => (
+                <ItemCard key={item.id} item={item} index={index} />
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
-      <Dialog open={openBalanceDialog} onOpenChange={setOpenBalanceDialog}>
-        <DialogContent className="bg-card border-primary/30">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-primary">Купить балы</DialogTitle>
-            <DialogDescription>Выберите пакет для пополнения баланса</DialogDescription>
-          </DialogHeader>
-          
-          <div className="grid grid-cols-2 gap-4 py-4">
-            {[100, 500, 1000, 5000].map((amount) => (
-              <Card 
-                key={amount}
-                className="cursor-pointer hover:scale-105 transition-all hover:glow-effect border-primary/30"
-                onClick={() => {
-                  handleTopUp(amount);
-                  setOpenBalanceDialog(false);
-                }}
-              >
-                <CardContent className="p-6 text-center">
-                  <Icon name="Coins" size={32} className="text-primary mx-auto mb-2" />
-                  <p className="text-3xl font-bold text-primary">{amount}</p>
-                  <p className="text-sm text-muted-foreground">балов</p>
-                  <p className="text-xs mt-2 text-accent">{(amount / 10).toFixed(0)} руб</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={openWithdrawDialog} onOpenChange={setOpenWithdrawDialog}>
-        <DialogContent className="bg-card border-primary/30">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-primary">Вывод балов</DialogTitle>
-            <DialogDescription>
-              Выводите балы 1 раз в день. 1 бал = 0.1 руб
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="bg-muted/30 p-4 rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Доступно для вывода</p>
-              <p className="text-3xl font-bold text-primary">{balance?.balance} балов</p>
-              <p className="text-sm text-accent">≈ {(parseFloat(balance?.balance || '0') * 0.1).toFixed(2)} руб</p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="withdraw_amount">Сумма вывода (балы)</Label>
-              <Input
-                id="withdraw_amount"
-                type="number"
-                placeholder="100"
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="border-border/50"
-              />
-              <p className="text-xs text-muted-foreground">
-                Минимум 100 балов (10 руб)
-              </p>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="payment_details">Номер карты</Label>
-              <Input
-                id="payment_details"
-                placeholder="1234 5678 9012 3456"
-                value={paymentDetails}
-                onChange={(e) => setPaymentDetails(e.target.value)}
-                className="border-border/50"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenWithdrawDialog(false)}>
-              Отмена
-            </Button>
-            <Button 
-              onClick={handleWithdraw}
-              className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
-            >
-              <Icon name="Banknote" size={18} className="mr-2" />
-              Вывести
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={openReferralDialog} onOpenChange={setOpenReferralDialog}>
-        <DialogContent className="bg-card border-primary/30 max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-primary">Пригласи друга</DialogTitle>
-            <DialogDescription>
-              Получай 50 балов за каждого приглашенного друга!
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="bg-gradient-to-r from-primary/20 to-secondary/20 p-6 rounded-lg text-center">
-              <Icon name="Gift" size={48} className="text-primary mx-auto mb-3" />
-              <p className="text-4xl font-bold text-primary mb-1">50 балов</p>
-              <p className="text-sm text-muted-foreground">за каждого друга</p>
-            </div>
-            
-            <div className="bg-muted/30 p-4 rounded-lg space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Приглашено друзей</span>
-                <span className="text-xl font-bold text-primary">{referralData?.total_referrals || 0}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Заработано</span>
-                <span className="text-xl font-bold text-secondary">{referralData?.total_earned || 0} балов</span>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Ваша реферальная ссылка</Label>
-              <div className="flex gap-2">
-                <Input
-                  readOnly
-                  value={referralData?.referral_code ? `${window.location.origin}?ref=${referralData.referral_code}` : 'Загрузка...'}
-                  className="border-border/50"
-                />
-                <Button 
-                  onClick={copyReferralLink}
-                  variant="outline"
-                  className="border-primary/50"
-                >
-                  <Icon name="Copy" size={18} />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="bg-accent/10 p-3 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                💡 Отправь ссылку другу, и когда он зарегистрируется, вы оба получите бонусы!
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PaymentDialogs 
+        openBalanceDialog={openBalanceDialog}
+        onOpenBalanceDialogChange={setOpenBalanceDialog}
+        openWithdrawDialog={openWithdrawDialog}
+        onOpenWithdrawDialogChange={setOpenWithdrawDialog}
+        openReferralDialog={openReferralDialog}
+        onOpenReferralDialogChange={setOpenReferralDialog}
+        balance={balance}
+        withdrawAmount={withdrawAmount}
+        onWithdrawAmountChange={setWithdrawAmount}
+        paymentDetails={paymentDetails}
+        onPaymentDetailsChange={setPaymentDetails}
+        referralData={referralData}
+        onTopUp={handleTopUp}
+        onWithdraw={handleWithdraw}
+        onCopyReferralLink={copyReferralLink}
+      />
 
       <footer className="border-t border-border/50 mt-16 py-8 bg-card/30 backdrop-blur-sm">
         <div className="container mx-auto px-4 text-center text-muted-foreground">
