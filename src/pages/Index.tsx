@@ -251,10 +251,7 @@ const Index = () => {
               <Icon name="Grid3x3" size={16} className="mr-2" />
               Все
             </TabsTrigger>
-            <TabsTrigger value="weapons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="Sword" size={16} className="mr-2" />
-              Оружие
-            </TabsTrigger>
+            <TabsTrigger value="weapons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Roblox</TabsTrigger>
             <TabsTrigger value="armor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Icon name="Shield" size={16} className="mr-2" />
               Броня
