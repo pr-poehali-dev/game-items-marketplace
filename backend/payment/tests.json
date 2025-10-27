@@ -1,0 +1,29 @@
+{
+  "tests": [
+    {
+      "name": "Create payment successfully",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "amount": 500
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "payment_url": "string",
+        "amount": 500
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Reject invalid amount",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "user_id": 1,
+        "amount": 0
+      },
+      "expectedStatus": 400
+    }
+  ]
+}

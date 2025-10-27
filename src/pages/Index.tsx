@@ -53,6 +53,7 @@ const Index = () => {
   const BALANCE_URL = 'https://functions.poehali.dev/5d283741-7051-4c0d-8033-2f8a18947876';
   const WITHDRAW_URL = 'https://functions.poehali.dev/d8001bff-bd17-4f41-9fc2-19526a5d5ea6';
   const REFERRAL_URL = 'https://functions.poehali.dev/fa6fc18d-d38b-44fe-8ca0-36ba45768277';
+  const PAYMENT_URL = 'https://functions.poehali.dev/07e4cb43-0a4e-457b-a9f9-05daf5d0022c';
 
   useEffect(() => {
     fetchData();
@@ -80,7 +81,7 @@ const Index = () => {
 
   const handleTopUp = async (amount: number) => {
     try {
-      const res = await fetch(BALANCE_URL, {
+      const res = await fetch(PAYMENT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,11 +93,18 @@ const Index = () => {
       });
 
       const data = await res.json();
-      setBalance(data);
-      toast.success(`Баланс пополнен на ${amount} балов!`);
+      
+      if (data.payment_url) {
+        window.open(data.payment_url, '_blank');
+        toast.success(`Переходим к оплате ${amount} балов (${data.price_rub} руб)`);
+        
+        setTimeout(() => {
+          fetchData();
+        }, 3000);
+      }
     } catch (error) {
-      console.error('Error topping up:', error);
-      toast.error('Ошибка пополнения баланса');
+      console.error('Error creating payment:', error);
+      toast.error('Ошибка создания платежа');
     }
   };
 

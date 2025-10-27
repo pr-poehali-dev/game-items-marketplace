@@ -1,4 +1,5 @@
 {
+  "payment": "https://functions.poehali.dev/07e4cb43-0a4e-457b-a9f9-05daf5d0022c",
   "withdraw": "https://functions.poehali.dev/d8001bff-bd17-4f41-9fc2-19526a5d5ea6",
   "referral": "https://functions.poehali.dev/fa6fc18d-d38b-44fe-8ca0-36ba45768277",
   "marketplace": "https://functions.poehali.dev/df4a99c9-f7a8-4c3f-ad77-c7a1d451aed9",
