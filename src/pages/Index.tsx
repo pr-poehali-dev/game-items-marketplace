@@ -48,12 +48,13 @@ const Index = () => {
   const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const [userProfile, setUserProfile] = useState({
-    username: balance?.username || 'Player1',
-    email: 'player@example.com',
+    username: '',
+    email: '',
     avatar: '',
     bio: '',
-    balance: parseFloat(balance?.balance || '0')
+    balance: 0
   });
   const [newItem, setNewItem] = useState({
     title: '',
@@ -71,18 +72,22 @@ const Index = () => {
   const PAYMENT_URL = 'https://functions.poehali.dev/07e4cb43-0a4e-457b-a9f9-05daf5d0022c';
 
   useEffect(() => {
-    fetchData();
-    const savedProfile = localStorage.getItem('userProfile');
-    if (savedProfile) {
-      setUserProfile(JSON.parse(savedProfile));
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      setUserId(user.id);
+      fetchData(user.id);
     }
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (currentUserId?: number) => {
+    const uid = currentUserId || userId;
+    if (!uid) return;
+    
     try {
       const [itemsRes, balanceRes] = await Promise.all([
         fetch(MARKETPLACE_URL),
-        fetch(`${BALANCE_URL}?user_id=1`)
+        fetch(`${BALANCE_URL}?user_id=${uid}`)
       ]);
 
       const itemsData = await itemsRes.json();
@@ -90,6 +95,13 @@ const Index = () => {
 
       setItems(itemsData.items || []);
       setBalance(balanceData);
+      setUserProfile({
+        username: balanceData.username || '',
+        email: balanceData.email || '',
+        avatar: balanceData.profile_avatar || '',
+        bio: balanceData.bio || '',
+        balance: parseFloat(balanceData.balance || '0')
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Ошибка загрузки данных');
@@ -100,13 +112,15 @@ const Index = () => {
 
   const handleTopUp = async (amount: number) => {
     try {
+      if (!userId) return;
+      
       const res = await fetch(PAYMENT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 1,
+          user_id: userId,
           amount: amount
         })
       });
@@ -134,13 +148,15 @@ const Index = () => {
     }
 
     try {
+      if (!userId) return;
+      
       const res = await fetch(MARKETPLACE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          seller_id: 1,
+          seller_id: userId,
           title: newItem.title,
           description: newItem.description,
           price: parseFloat(newItem.price),
@@ -170,8 +186,10 @@ const Index = () => {
   };
 
   const fetchReferralData = async () => {
+    if (!userId) return;
+    
     try {
-      const res = await fetch(`${REFERRAL_URL}?user_id=1`);
+      const res = await fetch(`${REFERRAL_URL}?user_id=${userId}`);
       const data = await res.json();
       setReferralData(data);
     } catch (error) {
@@ -186,13 +204,15 @@ const Index = () => {
     }
 
     try {
+      if (!userId) return;
+      
       const res = await fetch(WITHDRAW_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 1,
+          user_id: userId,
           amount: parseFloat(withdrawAmount),
           payment_method: 'card',
           payment_details: paymentDetails
@@ -224,10 +244,38 @@ const Index = () => {
     }
   };
 
-  const handleSaveProfile = (updatedProfile: any) => {
-    setUserProfile(updatedProfile);
-    localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
-    toast.success('Профиль сохранён!');
+  const handleSaveProfile = async (updatedProfile: any) => {
+    if (!userId) return;
+    
+    try {
+      const res = await fetch(BALANCE_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          email: updatedProfile.email,
+          bio: updatedProfile.bio,
+          avatar: updatedProfile.avatar
+        })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setUserProfile({
+          username: data.username || '',
+          email: data.email || '',
+          avatar: data.profile_avatar || '',
+          bio: data.bio || '',
+          balance: parseFloat(data.balance || '0')
+        });
+        toast.success('Профиль сохранён!');
+      }
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast.error('Ошибка сохранения профиля');
+    }
   };
 
   const handleBuyItem = async (item: Item) => {
@@ -248,11 +296,11 @@ const Index = () => {
         item_title: item.title,
         item_image: item.image_url,
         price: itemPrice,
-        buyer_name: balance?.username || 'Player1',
+        buyer_name: balance?.username || userProfile.username,
         seller_name: item.seller_name,
         status: 'pending' as const,
         created_at: new Date().toISOString(),
-        buyer_id: 1,
+        buyer_id: userId || 0,
         seller_id: 2
       };
 
