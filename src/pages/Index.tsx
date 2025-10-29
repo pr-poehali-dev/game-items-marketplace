@@ -72,6 +72,10 @@ const Index = () => {
 
   useEffect(() => {
     fetchData();
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      setUserProfile(JSON.parse(savedProfile));
+    }
   }, []);
 
   const fetchData = async () => {
@@ -218,6 +222,12 @@ const Index = () => {
       navigator.clipboard.writeText(link);
       toast.success('Реферальная ссылка скопирована!');
     }
+  };
+
+  const handleSaveProfile = (updatedProfile: any) => {
+    setUserProfile(updatedProfile);
+    localStorage.setItem('userProfile', JSON.stringify(updatedProfile));
+    toast.success('Профиль сохранён!');
   };
 
   const handleBuyItem = async (item: Item) => {
@@ -432,10 +442,7 @@ const Index = () => {
           username: balance?.username || userProfile.username,
           balance: parseFloat(balance?.balance || '0')
         }}
-        onSave={(profile) => {
-          setUserProfile(profile);
-          toast.success('Профиль обновлен!');
-        }}
+        onSave={handleSaveProfile}
       />
 
       <ChatsDialog

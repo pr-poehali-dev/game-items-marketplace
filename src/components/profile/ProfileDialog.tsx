@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface UserProfile {
   username: string;
@@ -24,6 +24,10 @@ interface ProfileDialogProps {
 export const ProfileDialog = ({ open, onOpenChange, profile, onSave }: ProfileDialogProps) => {
   const [editedProfile, setEditedProfile] = useState(profile);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setEditedProfile(profile);
+  }, [profile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
