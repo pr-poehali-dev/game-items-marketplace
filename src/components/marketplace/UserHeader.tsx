@@ -19,6 +19,7 @@ interface UserHeaderProps {
   onOpenProfile: () => void;
   onOpenChats: () => void;
   unreadChatsCount?: number;
+  onLogout: () => void;
 }
 
 export const UserHeader = ({ 
@@ -29,7 +30,8 @@ export const UserHeader = ({
   onFetchReferralData,
   onOpenProfile,
   onOpenChats,
-  unreadChatsCount = 0
+  unreadChatsCount = 0,
+  onLogout
 }: UserHeaderProps) => {
   return (
     <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
@@ -98,6 +100,11 @@ export const UserHeader = ({
                 }}>
                   <Icon name="Users" size={16} className="mr-2" />
                   Пригласить друга
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout} className="text-destructive focus:text-destructive">
+                  <Icon name="LogOut" size={16} className="mr-2" />
+                  Выход из аккаунта
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

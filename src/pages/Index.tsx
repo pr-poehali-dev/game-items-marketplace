@@ -294,6 +294,11 @@ const Index = () => {
         onOpenProfile={() => setOpenProfileDialog(true)}
         onOpenChats={() => setOpenChatsDialog(true)}
         unreadChatsCount={chats.filter(c => c.unread_count > 0).length}
+        onLogout={() => {
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          window.location.reload();
+        }}
       />
 
       <main className="container mx-auto px-4 py-8">
