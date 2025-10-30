@@ -279,6 +279,11 @@ const Index = () => {
   };
 
   const handleBuyItem = async (item: Item) => {
+    if (!userId) {
+      toast.error('Необходимо авторизоваться');
+      return;
+    }
+
     const userBalance = parseFloat(balance?.balance || '0');
     const itemPrice = parseFloat(item.price);
 
@@ -288,42 +293,26 @@ const Index = () => {
     }
 
     try {
-      const newBalance = userBalance - itemPrice;
-      setBalance(prev => prev ? { ...prev, balance: newBalance.toString() } : null);
+      const res = await fetch(MARKETPLACE_URL, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          buyer_id: userId,
+          item_id: item.id
+        })
+      });
 
-      const mockTransaction = {
-        id: Date.now(),
-        item_title: item.title,
-        item_image: item.image_url,
-        price: itemPrice,
-        buyer_name: balance?.username || userProfile.username,
-        seller_name: item.seller_name,
-        status: 'pending' as const,
-        created_at: new Date().toISOString(),
-        buyer_id: userId || 0,
-        seller_id: 2
-      };
+      const data = await res.json();
 
-      setSelectedTransaction(mockTransaction);
-
-      const newChat = {
-        id: Date.now(),
-        transaction_id: mockTransaction.id,
-        item_title: item.title,
-        other_user_name: item.seller_name,
-        last_message: 'Сделка создана',
-        unread_count: 1,
-        updated_at: new Date().toISOString()
-      };
-
-      setChats(prev => [newChat, ...prev]);
-
-      toast.success(`Товар "${item.title}" куплен! Деньги заморожены до подтверждения.`);
-      toast.info(`Продавцу ${item.seller_name} отправлено уведомление о покупке`);
-      
-      setTimeout(() => {
-        setOpenTransactionDialog(true);
-      }, 1000);
+      if (res.ok) {
+        toast.success(`Товар "${item.title}" куплен успешно!`);
+        setItems(prev => prev.filter(i => i.id !== item.id));
+        fetchData();
+      } else {
+        toast.error(data.error || 'Ошибка при покупке товара');
+      }
 
     } catch (error) {
       console.error('Error buying item:', error);

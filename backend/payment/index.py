@@ -65,7 +65,7 @@ def create_payment(event: Dict[str, Any]) -> Dict[str, Any]:
         
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "INSERT INTO pending_payments (user_id, amount, status) VALUES (%s, %s, %s) RETURNING id",
+                "INSERT INTO t_p99005675_game_items_marketpla.pending_payments (user_id, amount, status) VALUES (%s, %s, %s) RETURNING id",
                 (user_id, amount, 'pending')
             )
             conn.commit()
@@ -116,7 +116,7 @@ def handle_webhook(event: Dict[str, Any]) -> Dict[str, Any]:
         
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
-                "SELECT user_id, amount, status FROM pending_payments WHERE id = %s",
+                "SELECT user_id, amount, status FROM t_p99005675_game_items_marketpla.pending_payments WHERE id = %s",
                 (payment_id,)
             )
             payment = cur.fetchone()
@@ -130,17 +130,17 @@ def handle_webhook(event: Dict[str, Any]) -> Dict[str, Any]:
                 }
             
             cur.execute(
-                "UPDATE users SET balance = balance + %s WHERE id = %s",
+                "UPDATE t_p99005675_game_items_marketpla.users SET balance = balance + %s WHERE id = %s",
                 (payment['amount'], payment['user_id'])
             )
             
             cur.execute(
-                "UPDATE pending_payments SET status = %s WHERE id = %s",
+                "UPDATE t_p99005675_game_items_marketpla.pending_payments SET status = %s WHERE id = %s",
                 ('completed', payment_id)
             )
             
             cur.execute(
-                "INSERT INTO transactions (buyer_id, amount, transaction_type) VALUES (%s, %s, %s)",
+                "INSERT INTO t_p99005675_game_items_marketpla.transactions (buyer_id, amount, transaction_type) VALUES (%s, %s, %s)",
                 (payment['user_id'], payment['amount'], 'top_up')
             )
             
