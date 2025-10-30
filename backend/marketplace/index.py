@@ -32,24 +32,52 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         conn = psycopg2.connect(dsn)
         
         if method == 'GET':
+            params = event.get('queryStringParameters', {})
+            user_id = params.get('user_id')
+            
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT 
-                        i.id, 
-                        i.title, 
-                        i.price, 
-                        i.image_url,
-                        i.category, 
-                        i.rarity,
-                        i.is_sold,
-                        i.seller_id,
-                        u.username as seller_name
-                    FROM t_p99005675_game_items_marketpla.items i
-                    LEFT JOIN t_p99005675_game_items_marketpla.users u ON i.seller_id = u.id
-                    WHERE i.is_sold = FALSE
-                    ORDER BY i.created_at DESC
-                    LIMIT 10
-                """)
+                if user_id:
+                    cur.execute("""
+                        SELECT 
+                            i.id, 
+                            i.title, 
+                            i.price, 
+                            i.image_url,
+                            i.category, 
+                            i.rarity,
+                            i.is_sold,
+                            i.seller_id,
+                            i.created_at,
+                            u.username as seller_name,
+                            t.buyer_id,
+                            buyer.username as buyer_name,
+                            t.created_at as sold_at
+                        FROM t_p99005675_game_items_marketpla.items i
+                        LEFT JOIN t_p99005675_game_items_marketpla.users u ON i.seller_id = u.id
+                        LEFT JOIN t_p99005675_game_items_marketpla.transactions t ON t.item_id = i.id
+                        LEFT JOIN t_p99005675_game_items_marketpla.users buyer ON buyer.id = t.buyer_id
+                        WHERE i.seller_id = %s
+                        ORDER BY i.created_at DESC
+                        LIMIT 50
+                    """, (user_id,))
+                else:
+                    cur.execute("""
+                        SELECT 
+                            i.id, 
+                            i.title, 
+                            i.price, 
+                            i.image_url,
+                            i.category, 
+                            i.rarity,
+                            i.is_sold,
+                            i.seller_id,
+                            u.username as seller_name
+                        FROM t_p99005675_game_items_marketpla.items i
+                        LEFT JOIN t_p99005675_game_items_marketpla.users u ON i.seller_id = u.id
+                        WHERE i.is_sold = FALSE
+                        ORDER BY i.created_at DESC
+                        LIMIT 5
+                    """)
                 items = cur.fetchall()
                 
                 return {

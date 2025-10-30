@@ -18,6 +18,7 @@ interface UserHeaderProps {
   onFetchReferralData: () => void;
   onOpenProfile: () => void;
   onOpenChats: () => void;
+  onOpenSales: () => void;
   unreadChatsCount?: number;
   onLogout: () => void;
 }
@@ -30,6 +31,7 @@ export const UserHeader = ({
   onFetchReferralData,
   onOpenProfile,
   onOpenChats,
+  onOpenSales,
   unreadChatsCount = 0,
   onLogout
 }: UserHeaderProps) => {
@@ -83,6 +85,10 @@ export const UserHeader = ({
                 <DropdownMenuItem onClick={onOpenProfile}>
                   <Icon name="User" size={16} className="mr-2" />
                   Профиль
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onOpenSales}>
+                  <Icon name="TrendingUp" size={16} className="mr-2" />
+                  Мои продажи
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onOpenBalanceDialog}>

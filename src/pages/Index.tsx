@@ -11,6 +11,7 @@ import { PaymentDialogs } from '@/components/marketplace/PaymentDialogs';
 import { ProfileDialog } from '@/components/profile/ProfileDialog';
 import { ChatsDialog } from '@/components/marketplace/ChatsDialog';
 import { TransactionDialog } from '@/components/marketplace/TransactionDialog';
+import { MySalesDialog } from '@/components/marketplace/MySalesDialog';
 
 interface Item {
   id: number;
@@ -41,6 +42,9 @@ const Index = () => {
   const [openProfileDialog, setOpenProfileDialog] = useState(false);
   const [openChatsDialog, setOpenChatsDialog] = useState(false);
   const [openTransactionDialog, setOpenTransactionDialog] = useState(false);
+  const [openSalesDialog, setOpenSalesDialog] = useState(false);
+  const [mySalesItems, setMySalesItems] = useState<any[]>([]);
+  const [totalEarned, setTotalEarned] = useState(0);
   const [referralData, setReferralData] = useState<any>(null);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [paymentDetails, setPaymentDetails] = useState('');
@@ -278,6 +282,31 @@ const Index = () => {
     }
   };
 
+  const fetchMySales = async () => {
+    if (!userId) return;
+    
+    try {
+      const res = await fetch(`${MARKETPLACE_URL}?user_id=${userId}`);
+      const data = await res.json();
+      
+      setMySalesItems(data.items || []);
+      
+      const earned = data.items
+        .filter((item: any) => item.is_sold)
+        .reduce((sum: number, item: any) => sum + parseFloat(item.price), 0);
+      
+      setTotalEarned(earned);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
+      toast.error('Ошибка загрузки истории продаж');
+    }
+  };
+
+  const handleOpenSales = () => {
+    fetchMySales();
+    setOpenSalesDialog(true);
+  };
+
   const handleBuyItem = async (item: Item) => {
     if (!userId) {
       toast.error('Необходимо авторизоваться');
@@ -340,6 +369,7 @@ const Index = () => {
         onFetchReferralData={fetchReferralData}
         onOpenProfile={() => setOpenProfileDialog(true)}
         onOpenChats={() => setOpenChatsDialog(true)}
+        onOpenSales={handleOpenSales}
         unreadChatsCount={chats.filter(c => c.unread_count > 0).length}
         onLogout={() => {
           localStorage.removeItem('authToken');
@@ -517,6 +547,13 @@ const Index = () => {
           toast.error('Сделка отменена. Деньги возвращены покупателю.');
           setOpenTransactionDialog(false);
         }}
+      />
+
+      <MySalesDialog
+        open={openSalesDialog}
+        onOpenChange={setOpenSalesDialog}
+        items={mySalesItems}
+        totalEarned={totalEarned}
       />
 
       <footer className="border-t border-border/50 mt-16 py-8 bg-card/30 backdrop-blur-sm">
