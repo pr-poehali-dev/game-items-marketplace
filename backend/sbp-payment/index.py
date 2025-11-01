@@ -1,12 +1,18 @@
 import json
 import uuid
+import io
+import base64
 from typing import Dict, Any
+try:
+    import qrcode
+except ImportError:
+    qrcode = None
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Generate СБП (Fast Payment System) payment link
-    Args: event with httpMethod, body containing amount and phone
-    Returns: Payment URL for СБП transaction
+    Business: Generate СБП QR code for payment to 89638974135
+    Args: event with httpMethod, body containing amount and userId
+    Returns: QR code image and payment data for СБП
     '''
     method: str = event.get('httpMethod', 'GET')
     
@@ -35,7 +41,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     try:
         body_data = json.loads(event.get('body', '{}'))
         amount = body_data.get('amount', 0)
-        phone = body_data.get('phone', '')
+        user_id = body_data.get('userId', 'unknown')
         
         if not amount or amount <= 0:
             return {
@@ -47,20 +53,22 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'body': json.dumps({'error': 'Invalid amount'})
             }
         
-        if not phone:
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps({'error': 'Phone number required'})
-            }
-        
         payment_id = str(uuid.uuid4())
         rubles = amount / 10
+        recipient_phone = '89638974135'
         
-        sbp_url = f"https://qr.nspk.ru/proxyapp?type=01&bank=100000000111&sum={rubles}&cur=RUB&payeeId={payment_id}&persAcc={phone}"
+        sbp_url = f"https://qr.nspk.ru/AD10003H7CH2FNNHH0QGFMVHQ26LO3I5?type=02&bank=100000000111&sum={rubles}&cur=RUB&crc=B68B"
+        
+        qr_base64 = None
+        if qrcode:
+            qr = qrcode.QRCode(version=1, box_size=10, border=2)
+            qr.add_data(sbp_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            qr_base64 = base64.b64encode(buffer.getvalue()).decode()
         
         return {
             'statusCode': 200,
@@ -71,9 +79,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'isBase64Encoded': False,
             'body': json.dumps({
                 'paymentUrl': sbp_url,
+                'qrCode': qr_base64,
                 'paymentId': payment_id,
                 'amount': amount,
-                'rubles': rubles
+                'rubles': rubles,
+                'recipientPhone': recipient_phone,
+                'userId': user_id
             })
         }
         

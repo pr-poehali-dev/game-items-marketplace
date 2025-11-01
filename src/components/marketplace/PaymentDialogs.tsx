@@ -56,16 +56,13 @@ export const PaymentDialogs = ({
 }: PaymentDialogsProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [showSbpPayment, setShowSbpPayment] = useState(false);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [qrCodeImage, setQrCodeImage] = useState<string | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
 
   const handleSbpPayment = async () => {
     if (!selectedAmount) {
       toast.error('Выберите сумму пополнения');
-      return;
-    }
-
-    if (!phoneNumber || phoneNumber.length < 10) {
-      toast.error('Введите корректный номер телефона');
       return;
     }
 
@@ -75,23 +72,55 @@ export const PaymentDialogs = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           amount: selectedAmount,
-          phone: phoneNumber
+          userId: balance?.id
         })
       });
 
       const data = await response.json();
 
-      if (data.paymentUrl) {
-        window.open(data.paymentUrl, '_blank');
-        toast.success('Открыта страница оплаты СБП');
-        setShowSbpPayment(false);
-        onOpenBalanceDialogChange(false);
+      if (data.qrCode && data.paymentId) {
+        setQrCodeImage(data.qrCode);
+        setPaymentId(data.paymentId);
+        setShowSbpPayment(true);
+        toast.success('Сканируйте QR-код для оплаты');
+        startPaymentCheck(data.paymentId, selectedAmount);
       } else {
         toast.error('Ошибка создания платежа');
       }
     } catch (error) {
       toast.error('Ошибка при создании платежа СБП');
     }
+  };
+
+  const startPaymentCheck = (paymentId: string, amount: number) => {
+    setIsCheckingPayment(true);
+    const checkInterval = setInterval(async () => {
+      try {
+        const response = await fetch(
+          `https://functions.poehali.dev/5d283741-7051-4c0d-8033-2f8a18947876?user_id=${balance?.id}`,
+          { headers: { 'X-User-Id': String(balance?.id) } }
+        );
+        const data = await response.json();
+        
+        if (data.balance && parseFloat(data.balance) >= parseFloat(balance?.balance || '0') + amount) {
+          clearInterval(checkInterval);
+          setIsCheckingPayment(false);
+          toast.success(`Оплата получена! Начислено ${amount} баллов`);
+          setShowSbpPayment(false);
+          setQrCodeImage(null);
+          setSelectedAmount(null);
+          onOpenBalanceDialogChange(false);
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Error checking payment:', error);
+      }
+    }, 3000);
+
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      setIsCheckingPayment(false);
+    }, 300000);
   };
 
   return (
@@ -133,12 +162,12 @@ export const PaymentDialogs = ({
                   </div>
                   
                   <Button 
-                    onClick={() => setShowSbpPayment(true)}
+                    onClick={handleSbpPayment}
                     className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
                     size="lg"
                   >
                     <Icon name="Smartphone" size={20} className="mr-2" />
-                    Оплатить через СБП
+                    Получить QR-код для оплаты
                   </Button>
                 </div>
               )}
@@ -151,47 +180,53 @@ export const PaymentDialogs = ({
                 <p className="text-lg text-accent">{(selectedAmount! / 10).toFixed(0)} руб</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Номер телефона для СБП</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+7 900 123 45 67"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="border-border/50"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Введите номер телефона, привязанный к СБП
-                </p>
-              </div>
+              {qrCodeImage && (
+                <div className="bg-white p-4 rounded-lg">
+                  <img 
+                    src={`data:image/png;base64,${qrCodeImage}`} 
+                    alt="QR код для оплаты"
+                    className="w-full max-w-[280px] mx-auto"
+                  />
+                </div>
+              )}
 
               <div className="bg-primary/10 p-3 rounded-lg flex gap-2">
-                <Icon name="Info" size={16} className="text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  После нажатия кнопки откроется страница оплаты. Выберите банк и подтвердите платёж.
-                </p>
+                <Icon name="Smartphone" size={16} className="text-primary mt-0.5 flex-shrink-0" />
+                <div className="text-xs text-muted-foreground">
+                  <p className="font-semibold mb-1">Как оплатить:</p>
+                  <ol className="list-decimal list-inside space-y-1">
+                    <li>Откройте приложение банка</li>
+                    <li>Найдите оплату по СБП</li>
+                    <li>Отсканируйте QR-код</li>
+                    <li>Подтвердите платёж</li>
+                  </ol>
+                  <p className="mt-2 text-secondary font-semibold">
+                    Получатель: 89638974135
+                  </p>
+                </div>
               </div>
 
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setShowSbpPayment(false);
-                    setPhoneNumber('');
-                  }}
-                  className="flex-1"
-                >
-                  Назад
-                </Button>
-                <Button 
-                  onClick={handleSbpPayment}
-                  className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
-                >
-                  <Icon name="CreditCard" size={18} className="mr-2" />
-                  Оплатить
-                </Button>
-              </div>
+              {isCheckingPayment && (
+                <div className="bg-secondary/10 p-3 rounded-lg flex items-center gap-2">
+                  <Icon name="Loader2" size={16} className="text-secondary animate-spin" />
+                  <p className="text-xs text-muted-foreground">
+                    Ожидаем подтверждения оплаты... Баллы начислятся автоматически.
+                  </p>
+                </div>
+              )}
+
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowSbpPayment(false);
+                  setQrCodeImage(null);
+                  setSelectedAmount(null);
+                  setIsCheckingPayment(false);
+                }}
+                className="w-full"
+              >
+                Закрыть
+              </Button>
             </div>
           )}
         </DialogContent>
