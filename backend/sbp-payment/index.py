@@ -10,7 +10,7 @@ except ImportError:
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
-    Business: Generate СБП QR code for payment to 89638974135
+    Business: Generate СБП QR code for payment to card 2200700628083809
     Args: event with httpMethod, body containing amount and userId
     Returns: QR code image and payment data for СБП
     '''
@@ -55,7 +55,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         payment_id = str(uuid.uuid4())
         rubles = amount / 10
-        recipient_phone = '89638974135'
+        recipient_card = '2200700628083809'
         
         sbp_url = f"https://qr.nspk.ru/AD10003H7CH2FNNHH0QGFMVHQ26LO3I5?type=02&bank=100000000111&sum={rubles}&cur=RUB&crc=B68B"
         
@@ -83,7 +83,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'paymentId': payment_id,
                 'amount': amount,
                 'rubles': rubles,
-                'recipientPhone': recipient_phone,
+                'recipientCard': recipient_card,
                 'userId': user_id
             })
         }

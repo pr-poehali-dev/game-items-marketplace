@@ -14,7 +14,7 @@
         "paymentId": "string",
         "amount": 1000,
         "rubles": 100,
-        "recipientPhone": "89638974135"
+        "recipientCard": "2200700628083809"
       },
       "bodyMatcher": "partial"
     },
