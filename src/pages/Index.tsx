@@ -1,17 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 import { UserHeader } from '@/components/marketplace/UserHeader';
-import { ItemCard } from '@/components/marketplace/ItemCard';
-import { CreateItemDialog } from '@/components/marketplace/CreateItemDialog';
-import { PaymentDialogs } from '@/components/marketplace/PaymentDialogs';
-import { ProfileDialog } from '@/components/profile/ProfileDialog';
-import { ChatsDialog } from '@/components/marketplace/ChatsDialog';
-import { TransactionDialog } from '@/components/marketplace/TransactionDialog';
-import { MySalesDialog } from '@/components/marketplace/MySalesDialog';
+import { MarketplaceContent } from '@/components/marketplace/MarketplaceContent';
+import { DialogsContainer } from '@/components/marketplace/DialogsContainer';
 
 interface Item {
   id: number;
@@ -259,312 +250,222 @@ const Index = () => {
         },
         body: JSON.stringify({
           user_id: userId,
+          username: updatedProfile.username,
           email: updatedProfile.email,
-          bio: updatedProfile.bio,
-          avatar: updatedProfile.avatar
+          profile_avatar: updatedProfile.avatar,
+          bio: updatedProfile.bio
         })
       });
-      
+
       if (res.ok) {
-        const data = await res.json();
-        setUserProfile({
-          username: data.username || '',
-          email: data.email || '',
-          avatar: data.profile_avatar || '',
-          bio: data.bio || '',
-          balance: parseFloat(data.balance || '0')
-        });
-        toast.success('Профиль сохранён!');
+        toast.success('Профиль обновлен!');
+        setOpenProfileDialog(false);
+        fetchData();
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Ошибка сохранения профиля');
+      console.error('Error updating profile:', error);
+      toast.error('Ошибка обновления профиля');
     }
   };
 
-  const fetchMySales = async () => {
-    if (!userId) return;
-    
-    try {
-      const res = await fetch(`${MARKETPLACE_URL}?user_id=${userId}`);
-      const data = await res.json();
-      
-      setMySalesItems(data.items || []);
-      
-      const earned = data.items
-        .filter((item: any) => item.is_sold)
-        .reduce((sum: number, item: any) => sum + parseFloat(item.price), 0);
-      
-      setTotalEarned(earned);
-    } catch (error) {
-      console.error('Error fetching sales:', error);
-      toast.error('Ошибка загрузки истории продаж');
-    }
-  };
+  const handleBuyItem = async (itemId: number, price: string) => {
+    if (!userId || !balance) return;
 
-  const handleOpenSales = () => {
-    fetchMySales();
-    setOpenSalesDialog(true);
-  };
-
-  const handleBuyItem = async (item: Item) => {
-    if (!userId) {
-      toast.error('Необходимо авторизоваться');
-      return;
-    }
-
-    const userBalance = parseFloat(balance?.balance || '0');
-    const itemPrice = parseFloat(item.price);
+    const itemPrice = parseFloat(price);
+    const userBalance = parseFloat(balance.balance);
 
     if (userBalance < itemPrice) {
-      toast.error('Недостаточно средств на балансе!');
+      toast.error('Недостаточно средств на балансе');
+      setOpenBalanceDialog(true);
       return;
     }
 
     try {
-      const res = await fetch(MARKETPLACE_URL, {
+      const res = await fetch(`${MARKETPLACE_URL}/${itemId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           buyer_id: userId,
-          item_id: item.id
+          status: 'sold'
         })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        toast.success(`Товар "${item.title}" куплен успешно!`);
-        setItems(prev => prev.filter(i => i.id !== item.id));
+        toast.success('Покупка успешна! Предмет добавлен в инвентарь');
+        setSelectedTransaction(data.transaction);
+        setOpenTransactionDialog(true);
         fetchData();
       } else {
-        toast.error(data.error || 'Ошибка при покупке товара');
+        toast.error(data.error || 'Ошибка покупки');
       }
-
     } catch (error) {
       console.error('Error buying item:', error);
-      toast.error('Ошибка при покупке товара');
+      toast.error('Ошибка покупки предмета');
+    }
+  };
+
+  const handleOpenChat = async (itemId: number) => {
+    if (!userId) return;
+    
+    setOpenChatsDialog(true);
+    
+    try {
+      const res = await fetch(`${MARKETPLACE_URL}/chats?user_id=${userId}`);
+      const data = await res.json();
+      setChats(data.chats || []);
+      
+      const existingChat = data.chats.find((c: any) => c.item_id === itemId);
+      if (existingChat) {
+        setSelectedChatId(existingChat.id);
+        fetchMessages(existingChat.id);
+      } else {
+        const createRes = await fetch(`${MARKETPLACE_URL}/chats`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: itemId, buyer_id: userId })
+        });
+        const newChat = await createRes.json();
+        setChats([...data.chats, newChat]);
+        setSelectedChatId(newChat.id);
+        fetchMessages(newChat.id);
+      }
+    } catch (error) {
+      console.error('Error opening chat:', error);
+    }
+  };
+
+  const fetchMessages = async (chatId: number) => {
+    try {
+      const res = await fetch(`${MARKETPLACE_URL}/messages?chat_id=${chatId}`);
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  };
+
+  const handleSendMessage = async (text: string) => {
+    if (!selectedChatId || !userId) return;
+
+    try {
+      await fetch(`${MARKETPLACE_URL}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: selectedChatId,
+          sender_id: userId,
+          message: text
+        })
+      });
+
+      fetchMessages(selectedChatId);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const handleOpenMySales = async () => {
+    if (!userId) return;
+    
+    setOpenSalesDialog(true);
+    
+    try {
+      const res = await fetch(`${MARKETPLACE_URL}/my-sales?seller_id=${userId}`);
+      const data = await res.json();
+      setMySalesItems(data.items || []);
+      setTotalEarned(data.total_earned || 0);
+    } catch (error) {
+      console.error('Error fetching sales:', error);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-glow-pulse text-4xl font-bold text-primary">
-          Загрузка...
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-card">
-      <UserHeader 
-        balance={balance}
-        onOpenBalanceDialog={() => setOpenBalanceDialog(true)}
-        onOpenWithdrawDialog={() => setOpenWithdrawDialog(true)}
-        onOpenReferralDialog={() => setOpenReferralDialog(true)}
-        onFetchReferralData={fetchReferralData}
-        onOpenProfile={() => setOpenProfileDialog(true)}
-        onOpenChats={() => setOpenChatsDialog(true)}
-        onOpenSales={handleOpenSales}
-        unreadChatsCount={chats.filter(c => c.unread_count > 0).length}
-        onLogout={() => {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          window.location.reload();
-        }}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <UserHeader
+          balance={balance}
+          onAddBalance={() => setOpenBalanceDialog(true)}
+          onWithdraw={() => setOpenWithdrawDialog(true)}
+          onReferral={() => {
+            fetchReferralData();
+            setOpenReferralDialog(true);
+          }}
+          onProfile={() => setOpenProfileDialog(true)}
+          onCreateItem={() => setOpenDialog(true)}
+          onOpenChats={() => {
+            if (userId) {
+              fetch(`${MARKETPLACE_URL}/chats?user_id=${userId}`)
+                .then(res => res.json())
+                .then(data => {
+                  setChats(data.chats || []);
+                  setOpenChatsDialog(true);
+                });
+            }
+          }}
+          onOpenSales={handleOpenMySales}
+        />
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h2 className="text-4xl font-bold mb-2 text-glow">Маркетплейс</h2>
-            <p className="text-muted-foreground">Покупай и продавай игровые предметы</p>
-          </div>
-          
-          <Button 
-            onClick={() => setOpenDialog(true)}
-            className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect animate-glow-pulse"
-          >
-            <Icon name="Plus" size={20} className="mr-2" />
-            Продать предмет
-          </Button>
-          
-          <CreateItemDialog 
-            open={openDialog}
-            onOpenChange={setOpenDialog}
-            newItem={newItem}
-            onItemChange={setNewItem}
-            onCreateItem={handleCreateItem}
-          />
-        </div>
+        <MarketplaceContent
+          items={items}
+          searchQuery={searchQuery}
+          userId={userId}
+          onSearchChange={setSearchQuery}
+          onBuyItem={handleBuyItem}
+          onOpenChat={handleOpenChat}
+        />
 
-        <div className="mb-6">
-          <div className="relative">
-            <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Поиск предметов по названию..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-card/50 border-border/50 focus:border-primary/50"
-            />
-          </div>
-        </div>
-
-        <Tabs defaultValue="all" className="mb-8">
-          <TabsList className="bg-card/50 border border-border/50">
-            <TabsTrigger value="all" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Icon name="Grid3x3" size={16} className="mr-2" />
-              Все
-            </TabsTrigger>
-            <TabsTrigger value="weapons" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Roblox</TabsTrigger>
-            <TabsTrigger value="armor" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Minecraft</TabsTrigger>
-            <TabsTrigger value="skins" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Black Russia</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items
-                .filter(item => 
-                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
-                ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="weapons" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items
-                .filter(item => item.category === 'Оружие')
-                .filter(item => 
-                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
-                ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="armor" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items
-                .filter(item => item.category === 'Броня')
-                .filter(item => 
-                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
-                ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="skins" className="mt-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {items
-                .filter(item => item.category === 'Скины')
-                .filter(item => 
-                  item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  item.description.toLowerCase().includes(searchQuery.toLowerCase())
-                )
-                .map((item, index) => (
-                  <ItemCard key={item.id} item={item} index={index} onBuyItem={handleBuyItem} />
-                ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </main>
-
-      <PaymentDialogs 
-        openBalanceDialog={openBalanceDialog}
-        onOpenBalanceDialogChange={setOpenBalanceDialog}
-        openWithdrawDialog={openWithdrawDialog}
-        onOpenWithdrawDialogChange={setOpenWithdrawDialog}
-        openReferralDialog={openReferralDialog}
-        onOpenReferralDialogChange={setOpenReferralDialog}
-        balance={balance}
-        withdrawAmount={withdrawAmount}
-        onWithdrawAmountChange={setWithdrawAmount}
-        paymentDetails={paymentDetails}
-        onPaymentDetailsChange={setPaymentDetails}
-        referralData={referralData}
-        onTopUp={handleTopUp}
-        onWithdraw={handleWithdraw}
-        onCopyReferralLink={copyReferralLink}
-      />
-
-      <ProfileDialog
-        open={openProfileDialog}
-        onOpenChange={setOpenProfileDialog}
-        profile={{
-          ...userProfile,
-          username: balance?.username || userProfile.username,
-          balance: parseFloat(balance?.balance || '0')
-        }}
-        onSave={handleSaveProfile}
-      />
-
-      <ChatsDialog
-        open={openChatsDialog}
-        onOpenChange={setOpenChatsDialog}
-        chats={chats}
-        selectedChatId={selectedChatId}
-        messages={messages}
-        onSelectChat={(chatId) => {
-          setSelectedChatId(chatId);
-        }}
-        onSendMessage={(transactionId, message) => {
-          toast.success('Сообщение отправлено');
-        }}
-        onOpenTransaction={(transactionId) => {
-          setOpenChatsDialog(false);
-          setOpenTransactionDialog(true);
-        }}
-      />
-
-      <TransactionDialog
-        open={openTransactionDialog}
-        onOpenChange={setOpenTransactionDialog}
-        transaction={selectedTransaction}
-        currentUserId={1}
-        onConfirmDelivery={(transactionId) => {
-          toast.success('Отправка подтверждена! Ожидайте подтверждения от покупателя.');
-          setOpenTransactionDialog(false);
-        }}
-        onConfirmReceived={(transactionId) => {
-          toast.success('Получение подтверждено! Деньги переведены продавцу.');
-          setOpenTransactionDialog(false);
-        }}
-        onCancelTransaction={(transactionId) => {
-          toast.error('Сделка отменена. Деньги возвращены покупателю.');
-          setOpenTransactionDialog(false);
-        }}
-      />
-
-      <MySalesDialog
-        open={openSalesDialog}
-        onOpenChange={setOpenSalesDialog}
-        items={mySalesItems}
-        totalEarned={totalEarned}
-      />
-
-      <footer className="border-t border-border/50 mt-16 py-8 bg-card/30 backdrop-blur-sm">
-        <div className="container mx-auto px-4 text-center text-muted-foreground">
-          <p className="flex items-center justify-center gap-2">
-            <Icon name="Sparkles" size={16} className="text-primary" />
-            Gaming Marketplace - Покупай, продавай, побеждай!
-            <Icon name="Sparkles" size={16} className="text-secondary" />
-          </p>
-        </div>
-      </footer>
+        <DialogsContainer
+          openDialog={openDialog}
+          openBalanceDialog={openBalanceDialog}
+          openWithdrawDialog={openWithdrawDialog}
+          openReferralDialog={openReferralDialog}
+          openProfileDialog={openProfileDialog}
+          openChatsDialog={openChatsDialog}
+          openTransactionDialog={openTransactionDialog}
+          openSalesDialog={openSalesDialog}
+          setOpenDialog={setOpenDialog}
+          setOpenBalanceDialog={setOpenBalanceDialog}
+          setOpenWithdrawDialog={setOpenWithdrawDialog}
+          setOpenReferralDialog={setOpenReferralDialog}
+          setOpenProfileDialog={setOpenProfileDialog}
+          setOpenChatsDialog={setOpenChatsDialog}
+          setOpenTransactionDialog={setOpenTransactionDialog}
+          setOpenSalesDialog={setOpenSalesDialog}
+          newItem={newItem}
+          setNewItem={setNewItem}
+          handleCreateItem={handleCreateItem}
+          handleTopUp={handleTopUp}
+          withdrawAmount={withdrawAmount}
+          setWithdrawAmount={setWithdrawAmount}
+          paymentDetails={paymentDetails}
+          setPaymentDetails={setPaymentDetails}
+          handleWithdraw={handleWithdraw}
+          referralData={referralData}
+          copyReferralLink={copyReferralLink}
+          userProfile={userProfile}
+          handleSaveProfile={handleSaveProfile}
+          chats={chats}
+          selectedChatId={selectedChatId}
+          setSelectedChatId={setSelectedChatId}
+          messages={messages}
+          handleSendMessage={handleSendMessage}
+          selectedTransaction={selectedTransaction}
+          mySalesItems={mySalesItems}
+          totalEarned={totalEarned}
+        />
+      </div>
     </div>
   );
 };
