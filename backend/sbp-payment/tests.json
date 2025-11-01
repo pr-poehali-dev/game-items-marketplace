@@ -1,0 +1,40 @@
+{
+  "tests": [
+    {
+      "name": "Create СБП payment with valid data",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "amount": 1000,
+        "phone": "+79001234567"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "paymentUrl": "string",
+        "paymentId": "string",
+        "amount": 1000,
+        "rubles": 100
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Reject payment without amount",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "phone": "+79001234567"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "Invalid amount"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle OPTIONS for CORS",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    }
+  ]
+}
