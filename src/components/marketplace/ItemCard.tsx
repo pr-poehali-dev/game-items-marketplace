@@ -17,8 +17,9 @@ interface Item {
 
 interface ItemCardProps {
   item: Item;
-  index: number;
-  onBuyItem: (item: Item) => void;
+  userId: number | null;
+  onBuy: () => void;
+  onChat: () => void;
 }
 
 const getRarityColor = (rarity: string) => {
@@ -31,11 +32,10 @@ const getRarityColor = (rarity: string) => {
   return colors[rarity] || 'bg-muted text-muted-foreground';
 };
 
-export const ItemCard = ({ item, index, onBuyItem }: ItemCardProps) => {
+export const ItemCard = ({ item, userId, onBuy, onChat }: ItemCardProps) => {
   return (
     <Card 
       className="group hover:scale-105 transition-all duration-300 hover:glow-effect cursor-pointer bg-card/80 backdrop-blur-sm border-border/50 animate-fade-in overflow-hidden"
-      style={{ animationDelay: `${index * 100}ms` }}
     >
       <div className="relative overflow-hidden h-48">
         <img 
@@ -72,13 +72,19 @@ export const ItemCard = ({ item, index, onBuyItem }: ItemCardProps) => {
         </div>
       </CardContent>
       
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <Button 
-          className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect group-hover:animate-glow-pulse transition-all"
-          onClick={() => onBuyItem(item)}
+          className="flex-1 bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect group-hover:animate-glow-pulse transition-all"
+          onClick={onBuy}
         >
           <Icon name="ShoppingCart" size={18} className="mr-2" />
           Купить
+        </Button>
+        <Button 
+          variant="outline"
+          onClick={onChat}
+        >
+          <Icon name="MessageCircle" size={18} />
         </Button>
       </CardFooter>
     </Card>
