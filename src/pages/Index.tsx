@@ -396,14 +396,11 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <UserHeader
           balance={balance}
-          onAddBalance={() => setOpenBalanceDialog(true)}
-          onWithdraw={() => setOpenWithdrawDialog(true)}
-          onReferral={() => {
-            fetchReferralData();
-            setOpenReferralDialog(true);
-          }}
-          onProfile={() => setOpenProfileDialog(true)}
-          onCreateItem={() => setOpenDialog(true)}
+          onOpenBalanceDialog={() => setOpenBalanceDialog(true)}
+          onOpenWithdrawDialog={() => setOpenWithdrawDialog(true)}
+          onOpenReferralDialog={() => setOpenReferralDialog(true)}
+          onFetchReferralData={fetchReferralData}
+          onOpenProfile={() => setOpenProfileDialog(true)}
           onOpenChats={() => {
             if (userId) {
               fetch(`${MARKETPLACE_URL}/chats?user_id=${userId}`)
@@ -415,6 +412,10 @@ const Index = () => {
             }
           }}
           onOpenSales={handleOpenMySales}
+          onLogout={() => {
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+          }}
         />
 
         <MarketplaceContent
