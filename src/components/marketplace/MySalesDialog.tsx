@@ -24,8 +24,8 @@ interface MySalesDialogProps {
 }
 
 export const MySalesDialog = ({ open, onOpenChange, items, totalEarned }: MySalesDialogProps) => {
-  const soldItems = items.filter(item => item.is_sold);
-  const activeItems = items.filter(item => !item.is_sold);
+  const soldItems = (items || []).filter(item => item.is_sold);
+  const activeItems = (items || []).filter(item => !item.is_sold);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return '';
