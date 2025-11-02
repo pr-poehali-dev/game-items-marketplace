@@ -201,7 +201,7 @@ export const PaymentDialogs = ({
                     <li>Подтвердите платёж</li>
                   </ol>
                   <p className="mt-2 text-secondary font-semibold">
-                    Получатель: 89638974135
+                    Номер карты: 2200700628083809
                   </p>
                 </div>
               </div>
