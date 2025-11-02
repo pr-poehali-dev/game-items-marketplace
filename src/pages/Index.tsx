@@ -465,6 +465,8 @@ const Index = () => {
           selectedTransaction={selectedTransaction}
           mySalesItems={mySalesItems}
           totalEarned={totalEarned}
+          balance={balance}
+          onBalanceUpdate={() => fetchData()}
         />
       </div>
     </div>

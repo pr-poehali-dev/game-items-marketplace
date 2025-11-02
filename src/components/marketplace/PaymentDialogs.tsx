@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { WheelOfFortune } from '@/components/marketplace/WheelOfFortune';
 
 interface UserBalance {
   id: number;
@@ -35,6 +36,7 @@ interface PaymentDialogsProps {
   onTopUp: (amount: number) => void;
   onWithdraw: () => void;
   onCopyReferralLink: () => void;
+  onBalanceUpdate: () => void;
 }
 
 export const PaymentDialogs = ({
@@ -52,7 +54,8 @@ export const PaymentDialogs = ({
   referralData,
   onTopUp,
   onWithdraw,
-  onCopyReferralLink
+  onCopyReferralLink,
+  onBalanceUpdate
 }: PaymentDialogsProps) => {
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [showSbpPayment, setShowSbpPayment] = useState(false);
@@ -340,6 +343,11 @@ export const PaymentDialogs = ({
                 💡 Отправь ссылку другу, и когда он зарегистрируется, вы оба получите бонусы!
               </p>
             </div>
+            
+            <WheelOfFortune 
+              userId={balance?.id || null}
+              onBalanceUpdate={onBalanceUpdate}
+            />
           </div>
         </DialogContent>
       </Dialog>

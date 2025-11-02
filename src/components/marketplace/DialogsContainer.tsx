@@ -43,6 +43,8 @@ interface DialogsContainerProps {
   selectedTransaction: any;
   mySalesItems: any[];
   totalEarned: number;
+  balance: any;
+  onBalanceUpdate: () => void;
 }
 
 export const DialogsContainer = ({
@@ -82,7 +84,9 @@ export const DialogsContainer = ({
   handleSendMessage,
   selectedTransaction,
   mySalesItems,
-  totalEarned
+  totalEarned,
+  balance,
+  onBalanceUpdate
 }: DialogsContainerProps) => {
   return (
     <>
@@ -109,6 +113,8 @@ export const DialogsContainer = ({
         onWithdraw={handleWithdraw}
         referralData={referralData}
         onCopyReferralLink={copyReferralLink}
+        balance={balance}
+        onBalanceUpdate={onBalanceUpdate}
       />
 
       <ProfileDialog
