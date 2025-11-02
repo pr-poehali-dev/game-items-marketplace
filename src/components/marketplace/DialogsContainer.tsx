@@ -114,7 +114,7 @@ export const DialogsContainer = ({
       <ProfileDialog
         open={openProfileDialog}
         onOpenChange={setOpenProfileDialog}
-        userProfile={userProfile}
+        profile={userProfile}
         onSave={handleSaveProfile}
       />
 

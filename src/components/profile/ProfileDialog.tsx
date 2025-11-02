@@ -22,11 +22,19 @@ interface ProfileDialogProps {
 }
 
 export const ProfileDialog = ({ open, onOpenChange, profile, onSave }: ProfileDialogProps) => {
-  const [editedProfile, setEditedProfile] = useState(profile);
+  const [editedProfile, setEditedProfile] = useState(profile || {
+    username: '',
+    email: '',
+    avatar: '',
+    bio: '',
+    balance: 0
+  });
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    setEditedProfile(profile);
+    if (profile) {
+      setEditedProfile(profile);
+    }
   }, [profile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
