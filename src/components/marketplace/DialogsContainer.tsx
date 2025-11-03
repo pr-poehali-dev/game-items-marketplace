@@ -4,6 +4,8 @@ import { ProfileDialog } from '@/components/profile/ProfileDialog';
 import { ChatsDialog } from '@/components/marketplace/ChatsDialog';
 import { TransactionDialog } from '@/components/marketplace/TransactionDialog';
 import { MySalesDialog } from '@/components/marketplace/MySalesDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { WheelOfFortune } from '@/components/marketplace/WheelOfFortune';
 
 interface DialogsContainerProps {
   openDialog: boolean;
@@ -14,6 +16,7 @@ interface DialogsContainerProps {
   openChatsDialog: boolean;
   openTransactionDialog: boolean;
   openSalesDialog: boolean;
+  openWheelDialog: boolean;
   setOpenDialog: (open: boolean) => void;
   setOpenBalanceDialog: (open: boolean) => void;
   setOpenWithdrawDialog: (open: boolean) => void;
@@ -22,6 +25,7 @@ interface DialogsContainerProps {
   setOpenChatsDialog: (open: boolean) => void;
   setOpenTransactionDialog: (open: boolean) => void;
   setOpenSalesDialog: (open: boolean) => void;
+  setOpenWheelDialog: (open: boolean) => void;
   newItem: any;
   setNewItem: (item: any) => void;
   handleCreateItem: () => void;
@@ -45,6 +49,7 @@ interface DialogsContainerProps {
   totalEarned: number;
   balance: any;
   onBalanceUpdate: () => void;
+  userId: number | null;
 }
 
 export const DialogsContainer = ({
@@ -56,6 +61,7 @@ export const DialogsContainer = ({
   openChatsDialog,
   openTransactionDialog,
   openSalesDialog,
+  openWheelDialog,
   setOpenDialog,
   setOpenBalanceDialog,
   setOpenWithdrawDialog,
@@ -64,6 +70,7 @@ export const DialogsContainer = ({
   setOpenChatsDialog,
   setOpenTransactionDialog,
   setOpenSalesDialog,
+  setOpenWheelDialog,
   newItem,
   setNewItem,
   handleCreateItem,
@@ -86,7 +93,8 @@ export const DialogsContainer = ({
   mySalesItems,
   totalEarned,
   balance,
-  onBalanceUpdate
+  onBalanceUpdate,
+  userId
 }: DialogsContainerProps) => {
   return (
     <>
@@ -146,6 +154,15 @@ export const DialogsContainer = ({
         salesItems={mySalesItems}
         totalEarned={totalEarned}
       />
+
+      <Dialog open={openWheelDialog} onOpenChange={setOpenWheelDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Колесо фортуны</DialogTitle>
+          </DialogHeader>
+          <WheelOfFortune userId={userId} onBalanceUpdate={onBalanceUpdate} />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

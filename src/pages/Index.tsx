@@ -34,6 +34,7 @@ const Index = () => {
   const [openChatsDialog, setOpenChatsDialog] = useState(false);
   const [openTransactionDialog, setOpenTransactionDialog] = useState(false);
   const [openSalesDialog, setOpenSalesDialog] = useState(false);
+  const [openWheelDialog, setOpenWheelDialog] = useState(false);
   const [mySalesItems, setMySalesItems] = useState<any[]>([]);
   const [totalEarned, setTotalEarned] = useState(0);
   const [referralData, setReferralData] = useState<any>(null);
@@ -416,6 +417,7 @@ const Index = () => {
             localStorage.removeItem('user');
             window.location.href = '/login';
           }}
+          onOpenWheelDialog={() => setOpenWheelDialog(true)}
         />
 
         <MarketplaceContent
@@ -436,6 +438,7 @@ const Index = () => {
           openChatsDialog={openChatsDialog}
           openTransactionDialog={openTransactionDialog}
           openSalesDialog={openSalesDialog}
+          openWheelDialog={openWheelDialog}
           setOpenDialog={setOpenDialog}
           setOpenBalanceDialog={setOpenBalanceDialog}
           setOpenWithdrawDialog={setOpenWithdrawDialog}
@@ -444,6 +447,7 @@ const Index = () => {
           setOpenChatsDialog={setOpenChatsDialog}
           setOpenTransactionDialog={setOpenTransactionDialog}
           setOpenSalesDialog={setOpenSalesDialog}
+          setOpenWheelDialog={setOpenWheelDialog}
           newItem={newItem}
           setNewItem={setNewItem}
           handleCreateItem={handleCreateItem}
@@ -467,6 +471,7 @@ const Index = () => {
           totalEarned={totalEarned}
           balance={balance}
           onBalanceUpdate={() => fetchData()}
+          userId={userId}
         />
       </div>
     </div>

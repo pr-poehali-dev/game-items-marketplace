@@ -21,6 +21,7 @@ interface UserHeaderProps {
   onOpenSales: () => void;
   unreadChatsCount?: number;
   onLogout: () => void;
+  onOpenWheelDialog: () => void;
 }
 
 export const UserHeader = ({ 
@@ -33,7 +34,8 @@ export const UserHeader = ({
   onOpenChats,
   onOpenSales,
   unreadChatsCount = 0,
-  onLogout
+  onLogout,
+  onOpenWheelDialog
 }: UserHeaderProps) => {
   return (
     <header className="border-b border-border/50 backdrop-blur-sm sticky top-0 z-50 bg-background/80">
@@ -71,6 +73,15 @@ export const UserHeader = ({
                   {unreadChatsCount}
                 </Badge>
               )}
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="icon"
+              className="border-primary/50 hover:glow-effect bg-gradient-to-br from-primary/10 to-secondary/10"
+              onClick={onOpenWheelDialog}
+            >
+              <Icon name="Trophy" size={20} className="text-primary" />
             </Button>
             
             <DropdownMenu>
