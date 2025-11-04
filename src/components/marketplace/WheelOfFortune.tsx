@@ -24,11 +24,15 @@ const WHEEL_COLORS = [
 export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps) => {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
-  const [canSpin, setCanSpin] = useState(true);
+  const [userSpins, setUserSpins] = useState(0);
   const [timeLeft, setTimeLeft] = useState<string>('');
+  const [canGetFreeSpin, setCanGetFreeSpin] = useState(true);
 
   useEffect(() => {
     if (!userId) return;
+
+    const spins = parseInt(localStorage.getItem(`userSpins_${userId}`) || '1');
+    setUserSpins(spins);
 
     const lastSpinTime = localStorage.getItem(`lastSpin_${userId}`);
     if (lastSpinTime) {
@@ -36,14 +40,14 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
       const cooldown = 3 * 60 * 60 * 1000;
       
       if (elapsed < cooldown) {
-        setCanSpin(false);
+        setCanGetFreeSpin(false);
         updateTimeLeft(cooldown - elapsed);
       }
     }
   }, [userId]);
 
   useEffect(() => {
-    if (!canSpin) {
+    if (!canGetFreeSpin) {
       const interval = setInterval(() => {
         const lastSpinTime = localStorage.getItem(`lastSpin_${userId}`);
         if (lastSpinTime) {
@@ -51,7 +55,7 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
           const cooldown = 3 * 60 * 60 * 1000;
           
           if (elapsed >= cooldown) {
-            setCanSpin(true);
+            setCanGetFreeSpin(true);
             setTimeLeft('');
             clearInterval(interval);
           } else {
@@ -62,7 +66,25 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
 
       return () => clearInterval(interval);
     }
-  }, [canSpin, userId]);
+  }, [canGetFreeSpin, userId]);
+
+  const claimFreeSpin = () => {
+    if (!userId || !canGetFreeSpin) return;
+    
+    const newSpins = userSpins + 1;
+    setUserSpins(newSpins);
+    localStorage.setItem(`userSpins_${userId}`, newSpins.toString());
+    localStorage.setItem(`lastSpin_${userId}`, Date.now().toString());
+    setCanGetFreeSpin(false);
+    toast.success('Вы получили бесплатную попытку!');
+  };
+
+  const buySpins = (count: number) => {
+    const newSpins = userSpins + count;
+    setUserSpins(newSpins);
+    localStorage.setItem(`userSpins_${userId}`, newSpins.toString());
+    toast.success(`Вы купили ${count} ${count === 1 ? 'попытку' : count < 5 ? 'попытки' : 'попыток'}!`);
+  };
 
   const updateTimeLeft = (ms: number) => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
@@ -72,9 +94,13 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
   };
 
   const spinWheel = async () => {
-    if (!canSpin || isSpinning || !userId) return;
+    if (userSpins <= 0 || isSpinning || !userId) return;
 
     setIsSpinning(true);
+    
+    const newSpins = userSpins - 1;
+    setUserSpins(newSpins);
+    localStorage.setItem(`userSpins_${userId}`, newSpins.toString());
     
     const prizeIndex = Math.floor(Math.random() * PRIZES.length);
     const prize = PRIZES[prizeIndex];
@@ -97,9 +123,7 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
         });
 
         if (response.ok) {
-          toast.success(`Поздравляем! Вы выиграли ${prize} балов! 🎉`);
-          localStorage.setItem(`lastSpin_${userId}`, Date.now().toString());
-          setCanSpin(false);
+          toast.success(`Поздравляем! Вы выиграли ${prize} баллов! 🎉`);
           onBalanceUpdate();
         } else {
           toast.error('Ошибка при начислении приза');
@@ -167,38 +191,70 @@ export const WheelOfFortune = ({ userId, onBalanceUpdate }: WheelOfFortuneProps)
         </div>
 
         <div className="text-center space-y-3">
-          {canSpin ? (
-            <Button
-              onClick={spinWheel}
-              disabled={isSpinning}
-              className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
-              size="lg"
-            >
-              {isSpinning ? (
-                <>
-                  <Icon name="Loader2" className="mr-2 animate-spin" />
-                  Крутится...
-                </>
-              ) : (
-                <>
-                  <Icon name="Play" className="mr-2" />
-                  Крутить колесо
-                </>
-              )}
-            </Button>
-          ) : (
-            <div className="space-y-2">
-              <Button
-                disabled
-                className="w-full"
-                variant="outline"
-                size="lg"
-              >
-                <Icon name="Clock" className="mr-2" />
-                Следующая попытка через: {timeLeft}
-              </Button>
+          <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+            <div className="flex items-center justify-center gap-2 text-lg font-bold">
+              <Icon name="Ticket" className="text-primary" />
+              Доступно попыток: {userSpins}
             </div>
-          )}
+          </div>
+
+          <Button
+            onClick={spinWheel}
+            disabled={isSpinning || userSpins <= 0}
+            className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 glow-effect"
+            size="lg"
+          >
+            {isSpinning ? (
+              <>
+                <Icon name="Loader2" className="mr-2 animate-spin" />
+                Крутится...
+              </>
+            ) : (
+              <>
+                <Icon name="Play" className="mr-2" />
+                Крутить колесо
+              </>
+            )}
+          </Button>
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={claimFreeSpin}
+              disabled={!canGetFreeSpin}
+              variant="outline"
+              className="w-full"
+            >
+              <Icon name="Gift" className="mr-2" />
+              {canGetFreeSpin ? 'Бесплатная попытка' : `Через ${timeLeft}`}
+            </Button>
+            
+            <Button
+              onClick={() => buySpins(1)}
+              variant="outline"
+              className="w-full"
+            >
+              <Icon name="ShoppingCart" className="mr-2" />
+              Купить за 10₽
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              onClick={() => buySpins(5)}
+              variant="outline"
+              className="w-full"
+            >
+              5 попыток за 40₽
+            </Button>
+            
+            <Button
+              onClick={() => buySpins(10)}
+              variant="outline"
+              className="w-full"
+            >
+              10 попыток за 70₽
+            </Button>
+          </div>
           
           <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
             {PRIZES.map((prize, i) => (
